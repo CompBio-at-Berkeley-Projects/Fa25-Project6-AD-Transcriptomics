@@ -1,2 +1,2 @@
-# Fa25-Porject6-Neurodisease-Genentic-signals
+# Fa25-Project6-Neurodegenerative-Disease-Genentic-Signals
 to be added to
