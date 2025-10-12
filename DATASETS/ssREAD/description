@@ -1,8 +1,0 @@
-ssREAD - A Single-Cell and Spatial RNA-seq Database for Alzheimer’s Disease
-Resource Type:	Meta-Database / Curated Data Portal
-Name/Accession:	A single-cell and spatial RNA-seq database for Alzheimer’s disease (ssREAD)
-Primary Publication Link:	https://www.nature.com/articles/s41467-024-49133-z
-Direct Data Access Portal:	https://bmblx.bmi.osumc.edu/ssread/
-Rationale for Selection:	ssREAD is not a single dataset but a massive compilation of AD-related sc/snRNA-seq and spatial transcriptomics (ST) data, sourced from major repositories (Broad Institute SingleCellPortal, GEO, Synapse). It offers an unparalleled variety and depth of human and mouse AD data, allowing us to select the highest quality and most specific datasets for our project, including data that shows cell-type-specific and spatially-resolved expression changes.
-Key Technical Advantage:	The data is already harmonized and provided in analysis-ready formats (e.g., .h5ad and .h5seurat), making it immediately compatible with our planned tools like Seurat and Squidpy, significantly accelerating our QC and integration time.
-Project Caveat/Note:	We must strictly filter the data selections from this portal to use only the human AD datasets as per the project requirements.
