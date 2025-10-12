@@ -1,3 +1,3 @@
-# Fa25-Project6-Neurodegenerative-Disease-Genentic-Signals
+# Fa25-Project6-AD-Transcriptomics
 This project focuses on investigating the pathology of Alzheimer's Disease (AD) using public human RNA-seq data to identify cell-type-specific and/or spatially-resolved gene expression changes associated with AD progression.
 
