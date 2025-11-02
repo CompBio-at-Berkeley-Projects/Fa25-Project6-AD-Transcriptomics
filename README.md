@@ -17,9 +17,9 @@ We're using publicly available human brain sequencing data to understand what's 
 
 By the end of this project, we'll have:
 
-- ✅ A **Final Scientific Report** summarizing our findings
-- ✅ A **Final Presentation** (think conference-style poster/talk)
-- ✅ A **Fully-Documented GitHub Repository** with all our code and analysis
+- **Final Scientific Report** summarizing our findings
+- **Final Presentation** (think conference-style poster/talk)
+- **Fully-Documented GitHub Repository** with all our code and analysis
 
 **Official Goal Statement:**
 *"To utilize human single-cell and spatial RNA sequencing data from the ssREAD/GEO/Synapse portals to characterize the cell-type-specific transcriptional profiles in Alzheimer's Disease, with a focus on identifying novel, disease-associated states within the Microglia and Astrocyte populations and correlating their expression signatures to specific neuroanatomical regions via spatial mapping."*
