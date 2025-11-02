@@ -1,4 +1,4 @@
-# HighRes-AD-Transcriptomics: Unraveling Cellular and Spatial Transcriptomic Heterogeneity in Human Alzheimer's Disease
+# HighRes-AD-Transcriptomics in Human Alzheimer's Disease
 
 **Fall 2025 | Computational Biology @ Berkeley | Project 6**
 
@@ -12,18 +12,6 @@ We're using publicly available human brain sequencing data to understand what's 
 2. **How do specific "vulnerable" cell populations (like Microglia and Astrocytes) change during disease progression?**
 3. **Where in the brain are these changes happening?** (using spatial transcriptomics)
 
-Think of it like this: if the brain is a city, and Alzheimer's is like infrastructure breakdown, we want to know exactly which buildings (cell types) are affected, what's going wrong inside them (gene expression changes), and which neighborhoods (brain regions) are hit the hardest.
-
----
-
-## Team Info
-
-**Duration:** 8 weeks
-**Team Size:** 6 members
-**Meeting Time:** Tuesdays 9-10 PM @ Grimes Hall
-**Project Lead:** Bhavna
-
----
 
 ## The Big Picture Goal
 
@@ -35,8 +23,6 @@ By the end of this project, we'll have:
 
 **Official Goal Statement:**
 *"To utilize human single-cell and spatial RNA sequencing data from the ssREAD/GEO/Synapse portals to characterize the cell-type-specific transcriptional profiles in Alzheimer's Disease, with a focus on identifying novel, disease-associated states within the Microglia and Astrocyte populations and correlating their expression signatures to specific neuroanatomical regions via spatial mapping."*
-
-Translation: We're going to download brain sequencing data, use computational tools to find patterns in how cells behave differently in AD vs. healthy brains, and map those changes to specific locations in the brain.
 
 ---
 
@@ -63,31 +49,6 @@ Translation: We're going to download brain sequencing data, use computational to
   - Harmony for batch correction
   - GSEA/Enrichr for pathway analysis
 
----
-
-## How Does This Work? (The Pipeline)
-
-### Week 1-2: **Data Integration & QC**
-**What:** Download datasets, clean up low-quality cells, and integrate multiple datasets together
-**Why:** Different datasets have "batch effects" (technical noise from different labs/sequencing runs). Integration removes this noise so we can compare apples-to-apples.
-**Deliverable:** An integrated cell atlas with preliminary cell type labels
-
-### Week 3-4: **Cell Type Annotation & Clustering**
-**What:** Use known marker genes to identify cell types (Microglia, Astrocytes, Neurons, etc.) and cluster them into subpopulations
-**Why:** Not all Microglia are the same! Some might be in a "disease-activated" state. We need to find these sub-states.
-**Deliverable:** High-resolution cell type map with sub-clusters
-
-### Week 5-6: **Differential Expression Analysis**
-**What:** Statistical testing to find genes that are significantly different between AD and Control within each cell type
-**Why:** This tells us what's mechanistically going wrong in diseased cells (inflammation? metabolism? cell death pathways?)
-**Deliverable:** Lists of differentially expressed genes (DEGs) and pathway enrichment results
-
-### Week 7-8: **Spatial Mapping & Final Report**
-**What:** Map our findings onto spatial transcriptomics data to see *where* in the brain these changes occur
-**Why:** AD doesn't affect all brain regions equally. Spatial context matters!
-**Deliverable:** Final report, presentation, and polished GitHub repo
-
----
 
 ## Learning Resources
 
@@ -112,30 +73,6 @@ Translation: We're going to download brain sequencing data, use computational to
 🎥 **[StatQuest: UMAP Main Ideas](https://www.youtube.com/watch?v=eN0wFzBA4Sc)** (6 min)
 🎥 **[StatQuest: Clustering with DBSCAN](https://www.youtube.com/watch?v=RDZUdRSDOok)** (11 min)
 
----
-
-## Weekly Action Items
-
-### Week 1 (Completed)
-- ✅ Read background papers
-- ✅ Set up GitHub repo
-- ✅ First read-through of Seurat integration tutorial
-- ✅ Post questions/confusion points in Slack thread
-- ✅ Research answers to your own questions
-
-### Week 2 (Current)
-- 🔄 Download Lau and Mathys datasets
-- 🔄 Create Seurat objects and perform QC filtering
-- 🔄 Implement integration workflow (following tutorial)
-- 🔄 Generate preliminary UMAPs and QC plots
-- 🔄 **Deliverable:** Integrated cell atlas with batch correction verification
-
-### Week 3-4 (Upcoming)
-- Cell type annotation using marker genes
-- Subset Microglia and Astrocytes for high-resolution clustering
-- Identify disease-associated sub-states
-
----
 
 ## Installation & Setup
 
@@ -165,31 +102,8 @@ install.packages("synapser", repos = c("http://ran.synapse.org", "http://cran.fh
 - Go to https://www.synapse.org/
 - Register for free account (needed for Mathys dataset)
 
----
 
-## Important Notes
 
-### "I Don't Have Prior Experience..."
-**That's totally fine!** This project is designed for people with little-to-no computational biology background. The weekly structure builds up your skills gradually. Just stay on track with the weekly objectives and watch the YouTube videos.
-
-### "I Don't Understand the Tutorial..."
-**Expected!** On your first read, you won't understand most of the jargon. That's why we do:
-1. **First read** - Identify what you don't understand
-2. **Research** - Look up those terms
-3. **Second read** - Now it makes more sense
-4. **Implementation** - Run the code yourself
-
-### "Why Are We Doing Integration?"
-When you combine datasets from different labs/sequencing runs, they have technical differences called "batch effects." Without integration:
-- Cells cluster by *dataset* rather than by *cell type*
-- You can't tell if differences are real biology or just technical noise
-
-After integration:
-- Cells cluster by *cell type* regardless of which dataset they came from
-- Microglia from Dataset 1 and Dataset 2 cluster together
-- Now you can fairly compare AD vs. Control
-
----
 
 ## Project Structure
 
@@ -228,10 +142,3 @@ This project uses data from:
 - The Religious Orders Study and Memory and Aging Project (ROSMAP)
 - The ssREAD database team
 - Multiple AD research consortia
-
-We're standing on the shoulders of giants who made their data publicly available. Let's make the most of it!
-
----
-
-**Last Updated:** October 28, 2025
-**Project Status:** Week 2 - Data Integration Phase
