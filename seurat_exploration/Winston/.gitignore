@@ -1,0 +1,7 @@
+# Ignore large binary files, Rstudio data, and generated output
+
+*.Rproj
+renv/
+renv.lock
+*.png
+*.pdf
