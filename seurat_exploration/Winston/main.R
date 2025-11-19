@@ -78,7 +78,7 @@ markers_to_plot <- c("CD3D", "CREM", "HSPH1", "SELL", "GIMAP5", "CACYBP", "GNLY"
 	"S100A9", "HLA-DQA1", "GPR183", "PPBP", "GNG11", "HBA2", "HBB", "TSPAN13",
 	"IL3RA", "IGJ", "PRSS57")
 
-p_dot <- DotPlot(ifnb, features = markers.to.plot, 
+p_dot <- DotPlot(ifnb, features = markers_to_plot, 
 	cols = c("blue", "red"), dot.scale = 8, split.by = "stim") + RotatedAxis()
 # Identifying differential expressed genes across conditions
 aggregate_ifnb <- AggregateExpression(ifnb, group.by=c("seurat_annotations", "stim"), return.seurat=TRUE)
