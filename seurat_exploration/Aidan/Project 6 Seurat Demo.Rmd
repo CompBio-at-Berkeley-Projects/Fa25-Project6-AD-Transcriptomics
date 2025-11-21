@@ -132,6 +132,7 @@ When you click the **Knit** button a document will be generated that includes bo
 
 ```{r cars}
 summary(cars)
+x = 1
 ```
 
 ## Including Plots
