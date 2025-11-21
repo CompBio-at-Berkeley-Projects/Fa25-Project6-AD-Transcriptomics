@@ -1,0 +1,145 @@
+---
+title: "Test"
+output: html_document
+date: "2025-10-28"
+---
+```{r}
+install.packages("Seurat")
+install.packages("SeuratData")
+install.packages("patchwork")
+install.packages('remotes')  # if you don’t already have it
+remotes::install_github('satijalab/seurat-data')
+
+
+```
+```{r}
+library(Seurat)
+library(SeuratData)
+library(patchwork)
+```
+```{r}
+install.packages("remotes")
+remotes::install_github("satijalab/seurat-data")
+
+```
+
+
+```{r}
+# install dataset
+options(timeout = 600)  # allow 10 minutes
+InstallData("ifnb")
+```
+
+```{r}
+# load dataset
+ifnb <- LoadData("ifnb")
+# split the RNA measurements into two layers one for control cells, one for stimulated cells
+
+ifnb[["RNA"]] <- split(ifnb[["RNA"]], f = ifnb$stim)
+```
+
+
+```{r}
+# run standard anlaysis workflow
+ifnb <- NormalizeData(ifnb)
+ifnb <- FindVariableFeatures(ifnb)
+ifnb <- ScaleData(ifnb)
+ifnb <- RunPCA(ifnb)
+```
+
+```{r}
+ifnb <- FindNeighbors(ifnb, dims = 1:30, reduction = "pca")
+ifnb <- FindClusters(ifnb, resolution = 2, cluster.name = "unintegrated_clusters")
+```
+```{r}
+ifnb <- RunUMAP(ifnb, dims = 1:30, reduction = "pca", reduction.name = "umap.unintegrated")
+DimPlot(ifnb, reduction = "umap.unintegrated", group.by = c("stim", "seurat_clusters"))
+```
+```{r}
+data("ifnb")
+class(ifnb)
+```
+```{r}
+Assays(ifnb)
+```
+```{r}
+ifnb <- IntegrateLayers(object = ifnb, method = CCAIntegration, orig.reduction = "pca", new.reduction = "integrated.cca",
+    verbose = FALSE)
+
+# re-join layers after integration
+ifnb[["RNA"]] <- JoinLayers(ifnb[["RNA"]])
+
+ifnb <- FindNeighbors(ifnb, reduction = "integrated.cca", dims = 1:30)
+ifnb <- FindClusters(ifnb, resolution = 1)
+```
+
+```{r}
+Idents(ifnb) <- "seurat_annotations"
+nk.markers <- FindConservedMarkers(ifnb, ident.1 = "NK", grouping.var = "stim", verbose = FALSE)
+```
+```{r}
+install.packages("BiocManager")       # installs BiocManager if not present
+BiocManager::install("multtest")       # installs Bioconductor dependency
+install.packages("metap")              # installs the metap package
+
+```
+```{r}
+library(ggplot2)
+library(cowplot)
+theme_set(theme_cowplot())
+
+aggregate_ifnb <- AggregateExpression(ifnb, group.by = c("seurat_annotations", "stim"), return.seurat = TRUE)
+genes.to.label = c("ISG15", "LY6E", "IFI6", "ISG20", "MX1", "IFIT2", "IFIT1", "CXCL10", "CCL8")
+
+p1 <- CellScatter(aggregate_ifnb, "CD14 Mono_CTRL", "CD14 Mono_STIM", highlight = genes.to.label)
+p2 <- LabelPoints(plot = p1, points = genes.to.label, repel = TRUE)
+
+p3 <- CellScatter(aggregate_ifnb, "CD4 Naive T_CTRL", "CD4 Naive T_STIM", highlight = genes.to.label)
+p4 <- LabelPoints(plot = p3, points = genes.to.label, repel = TRUE)
+
+p2 + p4
+```
+
+```{r}
+ifnb$celltype.stim <- paste(ifnb$seurat_annotations, ifnb$stim, sep = "_")
+Idents(ifnb) <- "celltype.stim"
+b.interferon.response <- FindMarkers(ifnb, ident.1 = "B_STIM", ident.2 = "B_CTRL", verbose = FALSE)
+head(b.interferon.response, n = 15)
+```
+
+```{r}
+plots <- VlnPlot(ifnb, features = c("LYZ", "ISG15", "CXCL10"), split.by = "stim", group.by = "seurat_annotations",
+    pt.size = 0, combine = FALSE)
+wrap_plots(plots = plots, ncol = 1)
+```
+
+```{r}
+ifnb <- LoadData("ifnb")
+
+# split datasets and process without integration
+ifnb[["RNA"]] <- split(ifnb[["RNA"]], f = ifnb$stim)
+ifnb <- SCTransform(ifnb)
+ifnb <- RunPCA(ifnb)
+ifnb <- RunUMAP(ifnb, dims = 1:30)
+DimPlot(ifnb, reduction = "umap", group.by = c("stim", "seurat_annotations"))
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
