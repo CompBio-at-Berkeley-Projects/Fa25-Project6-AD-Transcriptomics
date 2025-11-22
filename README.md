@@ -10,7 +10,6 @@ We're using publicly available human brain sequencing data to understand what's 
 
 1. **Which genes are turned on or off in different brain cell types when someone has AD?**
 2. **How do specific "vulnerable" cell populations (like Microglia and Astrocytes) change during disease progression?**
-3. **Where in the brain are these changes happening?** (using spatial transcriptomics)
 
 
 ## The Big Picture Goal
@@ -30,24 +29,11 @@ By the end of this project, we'll have:
 
 ### Data Sources
 - **[ssREAD](https://bmblx.bmi.osumc.edu/ssread/)** - Single-cell and spatial RNA-seq database for Alzheimer's Disease (1,053 samples, 277 integrated datasets, 7.3 million cells!)
-- **[GEO (Gene Expression Omnibus)](https://www.ncbi.nlm.nih.gov/geo/)** - NCBI's public genomics data repository
-- **[Synapse](https://www.synapse.org/)** - Data repository commonly used for neuroscience/AD research (ROSMAP consortium)
-
-### Specific Datasets We're Using
-
-| **Dataset** | **Brain Region** | **Samples** | **Accession** | **Why We Chose It** |
-|-------------|------------------|-------------|---------------|---------------------|
-| **Lau et al. 2020** | Prefrontal Cortex | 12 AD + 9 Control (~170K nuclei) | [GEO: GSE157827](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE157827) | Large cell count, excellent metadata, easy download |
-| **Mathys et al. 2019** | Prefrontal Cortex | 24 AD + 24 Control (~80K nuclei) | [Synapse: syn18485175](https://www.synapse.org/#!Synapse:syn18485175) | Gold standard dataset, highly cited, well-annotated |
 
 ### Computational Tools
 - **Primary Language:** R (v4.x)
 - **Core Package:** [Seurat](https://satijalab.org/seurat/) (v5.x) - The workhorse for single-cell RNA-seq analysis
-- **Secondary Tools:**
-  - Python (Scanpy/Squidpy) for alternative analysis
-  - DESeq2/MAST for differential expression
-  - Harmony for batch correction
-  - GSEA/Enrichr for pathway analysis
+
 
 
 ## Learning Resources
