@@ -1,0 +1,341 @@
+{
+  "R": {
+    "Version": "4.5.2",
+    "Repositories": [
+      {
+        "Name": "CRAN",
+        "URL": "https://cloud.r-project.org"
+      }
+    ]
+  },
+  "Bioconductor": {
+    "Version": "3.22"
+  },
+  "Packages": {
+    "BiocManager": {
+      "Package": "BiocManager",
+      "Version": "1.30.27",
+      "Source": "Repository",
+      "Title": "Access the Bioconductor Project Package Repository",
+      "Description": "A convenient tool to install and update Bioconductor packages.",
+      "Authors@R": "c( person(\"Martin\", \"Morgan\", email = \"martin.morgan@roswellpark.org\", role = \"aut\", comment = c(ORCID = \"0000-0002-5874-8148\")), person(\"Marcel\", \"Ramos\", email = \"marcel.ramos@sph.cuny.edu\", role = c(\"aut\", \"cre\"), comment = c(ORCID = \"0000-0002-3242-0582\")))",
+      "Imports": [
+        "utils"
+      ],
+      "Suggests": [
+        "BiocVersion",
+        "BiocStyle",
+        "remotes",
+        "rmarkdown",
+        "testthat",
+        "withr",
+        "curl",
+        "knitr"
+      ],
+      "URL": "https://bioconductor.github.io/BiocManager/",
+      "BugReports": "https://github.com/Bioconductor/BiocManager/issues",
+      "VignetteBuilder": "knitr",
+      "License": "Artistic-2.0",
+      "Encoding": "UTF-8",
+      "RoxygenNote": "7.3.2",
+      "NeedsCompilation": "no",
+      "Author": "Martin Morgan [aut] (ORCID: <https://orcid.org/0000-0002-5874-8148>), Marcel Ramos [aut, cre] (ORCID: <https://orcid.org/0000-0002-3242-0582>)",
+      "Maintainer": "Marcel Ramos <marcel.ramos@sph.cuny.edu>",
+      "Repository": "CRAN"
+    },
+    "BiocVersion": {
+      "Package": "BiocVersion",
+      "Version": "3.22.0",
+      "Source": "Bioconductor",
+      "Title": "Set the appropriate version of Bioconductor packages",
+      "Description": "This package provides repository information for the appropriate version of Bioconductor.",
+      "Authors@R": "c( person(\"Martin\", \"Morgan\", email = \"martin.morgan@roswellpark.org\", role = \"aut\"), person(\"Marcel\", \"Ramos\", email = \"marcel.ramos@sph.cuny.edu\", role = \"ctb\"), person(\"Bioconductor\", \"Package Maintainer\", email  = \"maintainer@bioconductor.org\", role = c(\"ctb\", \"cre\")))",
+      "biocViews": "Infrastructure",
+      "Depends": [
+        "R (>= 4.5.0)"
+      ],
+      "License": "Artistic-2.0",
+      "Encoding": "UTF-8",
+      "RoxygenNote": "6.0.1",
+      "git_url": "https://git.bioconductor.org/packages/BiocVersion",
+      "git_branch": "devel",
+      "git_last_commit": "fea53ac",
+      "git_last_commit_date": "2025-04-15",
+      "Repository": "Bioconductor 3.22",
+      "NeedsCompilation": "no",
+      "Author": "Martin Morgan [aut], Marcel Ramos [ctb], Bioconductor Package Maintainer [ctb, cre]",
+      "Maintainer": "Bioconductor Package Maintainer <maintainer@bioconductor.org>"
+    },
+    "KernSmooth": {
+      "Package": "KernSmooth",
+      "Version": "2.23-26",
+      "Source": "Repository",
+      "Priority": "recommended",
+      "Date": "2024-12-10",
+      "Title": "Functions for Kernel Smoothing Supporting Wand & Jones (1995)",
+      "Authors@R": "c(person(\"Matt\", \"Wand\", role = \"aut\", email = \"Matt.Wand@uts.edu.au\"), person(\"Cleve\", \"Moler\", role = \"ctb\", comment = \"LINPACK routines in src/d*\"), person(\"Brian\", \"Ripley\", role = c(\"trl\", \"cre\", \"ctb\"), email = \"Brian.Ripley@R-project.org\", comment = \"R port and updates\"))",
+      "Note": "Maintainers are not available to give advice on using a package they did not author.",
+      "Depends": [
+        "R (>= 2.5.0)",
+        "stats"
+      ],
+      "Suggests": [
+        "MASS",
+        "carData"
+      ],
+      "Description": "Functions for kernel smoothing (and density estimation) corresponding to the book:  Wand, M.P. and Jones, M.C. (1995) \"Kernel Smoothing\".",
+      "License": "Unlimited",
+      "ByteCompile": "yes",
+      "NeedsCompilation": "yes",
+      "Author": "Matt Wand [aut], Cleve Moler [ctb] (LINPACK routines in src/d*), Brian Ripley [trl, cre, ctb] (R port and updates)",
+      "Maintainer": "Brian Ripley <Brian.Ripley@R-project.org>",
+      "Repository": "CRAN"
+    },
+    "MASS": {
+      "Package": "MASS",
+      "Version": "7.3-65",
+      "Source": "Repository",
+      "Priority": "recommended",
+      "Date": "2025-02-19",
+      "Revision": "$Rev: 3681 $",
+      "Depends": [
+        "R (>= 4.4.0)",
+        "grDevices",
+        "graphics",
+        "stats",
+        "utils"
+      ],
+      "Imports": [
+        "methods"
+      ],
+      "Suggests": [
+        "lattice",
+        "nlme",
+        "nnet",
+        "survival"
+      ],
+      "Authors@R": "c(person(\"Brian\", \"Ripley\", role = c(\"aut\", \"cre\", \"cph\"), email = \"Brian.Ripley@R-project.org\"), person(\"Bill\", \"Venables\", role = c(\"aut\", \"cph\")), person(c(\"Douglas\", \"M.\"), \"Bates\", role = \"ctb\"), person(\"Kurt\", \"Hornik\", role = \"trl\", comment = \"partial port ca 1998\"), person(\"Albrecht\", \"Gebhardt\", role = \"trl\", comment = \"partial port ca 1998\"), person(\"David\", \"Firth\", role = \"ctb\", comment = \"support functions for polr\"))",
+      "Description": "Functions and datasets to support Venables and Ripley, \"Modern Applied Statistics with S\" (4th edition, 2002).",
+      "Title": "Support Functions and Datasets for Venables and Ripley's MASS",
+      "LazyData": "yes",
+      "ByteCompile": "yes",
+      "License": "GPL-2 | GPL-3",
+      "URL": "http://www.stats.ox.ac.uk/pub/MASS4/",
+      "Contact": "<MASS@stats.ox.ac.uk>",
+      "NeedsCompilation": "yes",
+      "Author": "Brian Ripley [aut, cre, cph], Bill Venables [aut, cph], Douglas M. Bates [ctb], Kurt Hornik [trl] (partial port ca 1998), Albrecht Gebhardt [trl] (partial port ca 1998), David Firth [ctb] (support functions for polr)",
+      "Maintainer": "Brian Ripley <Brian.Ripley@R-project.org>",
+      "Repository": "CRAN"
+    },
+    "SCINA": {
+      "Package": "SCINA",
+      "Version": "1.2.0",
+      "Source": "Repository",
+      "Type": "Package",
+      "Title": "A Semi-Supervised Category Identification and Assignment Tool",
+      "Date": "2019-7-16",
+      "Author": "Ze Zhang",
+      "Maintainer": "Ze Zhang <Ze.Zhang@utsouthwestern.edu>",
+      "Depends": [
+        "R (>= 2.15.0)",
+        "MASS",
+        "gplots"
+      ],
+      "Description": "An automatic cell type detection and assignment algorithm for single cell RNA-Seq and Cytof/FACS data. 'SCINA' is capable of assigning cell type identities to a pool of cells profiled by scRNA-Seq or Cytof/FACS data with prior knowledge of markers, such as genes and protein symbols that are highly or lowly expressed in each category. See Zhang Z, et al (2019) <doi:10.3390/genes10070531> for more details.",
+      "URL": "http://lce.biohpc.swmed.edu/scina/ https://github.com/jcao89757/SCINA",
+      "License": "GPL-2",
+      "NeedsCompilation": "no",
+      "RoxygenNote": "6.1.0",
+      "Repository": "https://packagemanager.posit.co/cran/latest",
+      "Encoding": "UTF-8"
+    },
+    "bitops": {
+      "Package": "bitops",
+      "Version": "1.0-9",
+      "Source": "Repository",
+      "Date": "2024-10-03",
+      "Authors@R": "c( person(\"Steve\", \"Dutky\", role = \"aut\", email = \"sdutky@terpalum.umd.edu\", comment = \"S original; then (after MM's port) revised and modified\"), person(\"Martin\", \"Maechler\", role = c(\"cre\", \"aut\"), email = \"maechler@stat.math.ethz.ch\", comment = c(\"Initial R port; tweaks\", ORCID = \"0000-0002-8685-9910\")))",
+      "Title": "Bitwise Operations",
+      "Description": "Functions for bitwise operations on integer vectors.",
+      "License": "GPL (>= 2)",
+      "URL": "https://github.com/mmaechler/R-bitops",
+      "BugReports": "https://github.com/mmaechler/R-bitops/issues",
+      "NeedsCompilation": "yes",
+      "Author": "Steve Dutky [aut] (S original; then (after MM's port) revised and modified), Martin Maechler [cre, aut] (Initial R port; tweaks, <https://orcid.org/0000-0002-8685-9910>)",
+      "Maintainer": "Martin Maechler <maechler@stat.math.ethz.ch>",
+      "Repository": "https://packagemanager.posit.co/cran/latest",
+      "Encoding": "UTF-8"
+    },
+    "caTools": {
+      "Package": "caTools",
+      "Version": "1.18.3",
+      "Source": "Repository",
+      "Type": "Package",
+      "Title": "Tools: Moving Window Statistics, GIF, Base64, ROC AUC, etc",
+      "Date": "2024-09-04",
+      "Authors@R": "c(person(given = \"Jarek\", family = \"Tuszynski\", role = \"aut\", email = \"jaroslaw.w.tuszynski@saic.com\"), person(given = \"Michael\", family = \"Dietze\", role = \"cre\", email = \"michael.dietze@uni-goettingen.de\"))",
+      "Maintainer": "Michael Dietze <michael.dietze@uni-goettingen.de>",
+      "Depends": [
+        "R (>= 3.6.0)"
+      ],
+      "Imports": [
+        "bitops"
+      ],
+      "Suggests": [
+        "MASS",
+        "rpart"
+      ],
+      "Description": "Contains several basic utility functions including: moving (rolling, running) window statistic functions, read/write for GIF and ENVI binary files, fast calculation of AUC, LogitBoost classifier, base64 encoder/decoder, round-off-error-free sum and cumsum, etc.",
+      "License": "GPL-3",
+      "NeedsCompilation": "yes",
+      "Repository": "https://packagemanager.posit.co/cran/latest",
+      "Author": "Jarek Tuszynski [aut], Michael Dietze [cre]",
+      "Encoding": "UTF-8"
+    },
+    "gplots": {
+      "Package": "gplots",
+      "Version": "3.2.0",
+      "Source": "Repository",
+      "Title": "Various R Programming Tools for Plotting Data",
+      "Description": "Various R programming tools for plotting data, including: - calculating and plotting locally smoothed summary function as ('bandplot', 'wapply'), - enhanced versions of standard plots ('barplot2', 'boxplot2', 'heatmap.2', 'smartlegend'), - manipulating colors ('col2hex', 'colorpanel', 'redgreen', 'greenred', 'bluered', 'redblue', 'rich.colors'), - calculating and plotting two-dimensional data summaries ('ci2d', 'hist2d'), - enhanced regression diagnostic plots ('lmplot2', 'residplot'), - formula-enabled interface to 'stats::lowess' function ('lowess'), - displaying textual data in plots ('textplot', 'sinkplot'), - plotting dots whose size reflects the relative magnitude of the elements ('balloonplot', 'bubbleplot'), - plotting \"Venn\" diagrams ('venn'), - displaying Open-Office style plots ('ooplot'), - plotting multiple data on same region, with separate axes ('overplot'), - plotting means and confidence intervals ('plotCI', 'plotmeans'), - spacing points in an x-y plot so they don't overlap ('space').",
+      "Depends": [
+        "R (>= 3.0)"
+      ],
+      "Imports": [
+        "gtools",
+        "stats",
+        "caTools",
+        "KernSmooth",
+        "methods"
+      ],
+      "Suggests": [
+        "grid",
+        "MASS",
+        "knitr",
+        "rmarkdown",
+        "r2d2",
+        "nlme"
+      ],
+      "LazyData": "yes",
+      "VignetteBuilder": "knitr",
+      "Date": "2024-10-05",
+      "Authors@R": "c( person(\"Gregory R.\", \"Warnes\", , role = \"aut\"), person(\"Ben\", \"Bolker\", , role = \"aut\"), person(\"Lodewijk\", \"Bonebakker\", , role = \"aut\"), person(\"Robert\", \"Gentleman\", role = \"aut\"), person(\"Wolfgang\", \"Huber\", role = \"aut\"), person(\"Andy\", \"Liaw\", role = \"aut\"), person(\"Thomas\", \"Lumley\", role = \"aut\"), person(\"Martin\", \"Maechler\", role = \"aut\"), person(\"Arni\", \"Magnusson\", role = \"aut\"), person(\"Steffen\", \"Moeller\", role = \"aut\"), person(\"Marc\", \"Schwartz\", role = \"aut\"), person(\"Bill\", \"Venables\", role = \"aut\"), person(\"Tal\", \"Galili\", , \"tal.galili@gmail.com\", c(\"aut\", \"cre\")) )",
+      "License": "GPL-2",
+      "URL": "https://github.com/talgalili/gplots, https://talgalili.github.io/gplots/",
+      "BugReports": "https://github.com/talgalili/gplots/issues",
+      "NeedsCompilation": "no",
+      "Author": "Gregory R. Warnes [aut], Ben Bolker [aut], Lodewijk Bonebakker [aut], Robert Gentleman [aut], Wolfgang Huber [aut], Andy Liaw [aut], Thomas Lumley [aut], Martin Maechler [aut], Arni Magnusson [aut], Steffen Moeller [aut], Marc Schwartz [aut], Bill Venables [aut], Tal Galili [aut, cre]",
+      "Maintainer": "Tal Galili <tal.galili@gmail.com>",
+      "Repository": "https://packagemanager.posit.co/cran/latest",
+      "Encoding": "UTF-8"
+    },
+    "gtools": {
+      "Package": "gtools",
+      "Version": "3.9.5",
+      "Source": "Repository",
+      "Title": "Various R Programming Tools",
+      "Description": "Functions to assist in R programming, including: - assist in developing, updating, and maintaining R and R packages ('ask', 'checkRVersion', 'getDependencies', 'keywords', 'scat'), - calculate the logit and inverse logit transformations ('logit', 'inv.logit'), - test if a value is missing, empty or contains only NA and NULL values ('invalid'), - manipulate R's .Last function ('addLast'), - define macros ('defmacro'), - detect odd and even integers ('odd', 'even'), - convert strings containing non-ASCII characters (like single quotes) to plain ASCII ('ASCIIfy'), - perform a binary search ('binsearch'), - sort strings containing both numeric and character components ('mixedsort'), - create a factor variable from the quantiles of a continuous variable ('quantcut'), - enumerate permutations and combinations ('combinations', 'permutation'), - calculate and convert between fold-change and log-ratio ('foldchange', 'logratio2foldchange', 'foldchange2logratio'), - calculate probabilities and generate random numbers from Dirichlet distributions ('rdirichlet', 'ddirichlet'), - apply a function over adjacent subsets of a vector ('running'), - modify the TCP_NODELAY ('de-Nagle') flag for socket objects, - efficient 'rbind' of data frames, even if the column names don't match ('smartbind'), - generate significance stars from p-values ('stars.pval'), - convert characters to/from ASCII codes ('asc', 'chr'), - convert character vector to ASCII representation ('ASCIIfy'), - apply title capitalization rules to a character vector ('capwords').",
+      "Authors@R": "c(person(\"Gregory R.\", \"Warnes\", role = \"aut\"), person(\"Ben\", \"Bolker\", role = c(\"aut\", \"cre\"), email = \"bolker@mcmaster.ca\", comment=c(ORCID=\"0000-0002-2127-0443\")), person(\"Thomas\", \"Lumley\", role = \"aut\"), person(\"Arni\", \"Magnusson\", role = \"aut\"), person(\"Bill\", \"Venables\", role = \"aut\"), person(\"Genei\", \"Ryodan\", role = \"aut\"), person(\"Steffen\", \"Moeller\", role = \"aut\"), person(\"Ian\", \"Wilson\", role = \"ctb\"), person(\"Mark\", \"Davis\", role = \"ctb\"), person(\"Nitin\", \"Jain\", role=\"ctb\"), person(\"Scott\", \"Chamberlain\", role = \"ctb\"))",
+      "License": "GPL-2",
+      "Depends": [
+        "methods",
+        "stats",
+        "utils"
+      ],
+      "URL": "https://github.com/r-gregmisc/gtools",
+      "BugReports": "https://github.com/r-gregmisc/gtools/issues",
+      "Language": "en-US",
+      "Suggests": [
+        "car",
+        "gplots",
+        "knitr",
+        "rstudioapi",
+        "SGP",
+        "taxize"
+      ],
+      "RoxygenNote": "7.2.3",
+      "Encoding": "UTF-8",
+      "NeedsCompilation": "yes",
+      "Author": "Gregory R. Warnes [aut], Ben Bolker [aut, cre] (<https://orcid.org/0000-0002-2127-0443>), Thomas Lumley [aut], Arni Magnusson [aut], Bill Venables [aut], Genei Ryodan [aut], Steffen Moeller [aut], Ian Wilson [ctb], Mark Davis [ctb], Nitin Jain [ctb], Scott Chamberlain [ctb]",
+      "Maintainer": "Ben Bolker <bolker@mcmaster.ca>",
+      "Repository": "https://packagemanager.posit.co/cran/latest"
+    },
+    "preprocessCore": {
+      "Package": "preprocessCore",
+      "Version": "1.72.0",
+      "Source": "Bioconductor",
+      "Title": "A collection of pre-processing functions",
+      "Author": "Ben Bolstad <bmb@bmbolstad.com>",
+      "Maintainer": "Ben Bolstad <bmb@bmbolstad.com>",
+      "Imports": [
+        "stats"
+      ],
+      "Description": "A library of core preprocessing routines.",
+      "License": "LGPL (>= 2)",
+      "URL": "https://github.com/bmbolstad/preprocessCore",
+      "Collate": "normalize.quantiles.R quantile_extensions.R rma.background.correct.R rcModel.R colSummarize.R subColSummarize.R plmr.R plmd.R",
+      "LazyLoad": "yes",
+      "biocViews": "Infrastructure",
+      "git_url": "https://git.bioconductor.org/packages/preprocessCore",
+      "git_branch": "RELEASE_3_22",
+      "git_last_commit": "f8fc99a",
+      "git_last_commit_date": "2025-10-29",
+      "Repository": "Bioconductor 3.22",
+      "NeedsCompilation": "yes"
+    },
+    "renv": {
+      "Package": "renv",
+      "Version": "1.1.5",
+      "Source": "Repository",
+      "Type": "Package",
+      "Title": "Project Environments",
+      "Authors@R": "c( person(\"Kevin\", \"Ushey\", role = c(\"aut\", \"cre\"), email = \"kevin@rstudio.com\", comment = c(ORCID = \"0000-0003-2880-7407\")), person(\"Hadley\", \"Wickham\", role = c(\"aut\"), email = \"hadley@rstudio.com\", comment = c(ORCID = \"0000-0003-4757-117X\")), person(\"Posit Software, PBC\", role = c(\"cph\", \"fnd\")) )",
+      "Description": "A dependency management toolkit for R. Using 'renv', you can create and manage project-local R libraries, save the state of these libraries to a 'lockfile', and later restore your library as required. Together, these tools can help make your projects more isolated, portable, and reproducible.",
+      "License": "MIT + file LICENSE",
+      "URL": "https://rstudio.github.io/renv/, https://github.com/rstudio/renv",
+      "BugReports": "https://github.com/rstudio/renv/issues",
+      "Imports": [
+        "utils"
+      ],
+      "Suggests": [
+        "BiocManager",
+        "cli",
+        "compiler",
+        "covr",
+        "cpp11",
+        "devtools",
+        "generics",
+        "gitcreds",
+        "jsonlite",
+        "jsonvalidate",
+        "knitr",
+        "miniUI",
+        "modules",
+        "packrat",
+        "pak",
+        "R6",
+        "remotes",
+        "reticulate",
+        "rmarkdown",
+        "rstudioapi",
+        "shiny",
+        "testthat",
+        "uuid",
+        "waldo",
+        "yaml",
+        "webfakes"
+      ],
+      "Encoding": "UTF-8",
+      "RoxygenNote": "7.3.2",
+      "VignetteBuilder": "knitr",
+      "Config/Needs/website": "tidyverse/tidytemplate",
+      "Config/testthat/edition": "3",
+      "Config/testthat/parallel": "true",
+      "Config/testthat/start-first": "bioconductor,python,install,restore,snapshot,retrieve,remotes",
+      "NeedsCompilation": "no",
+      "Author": "Kevin Ushey [aut, cre] (ORCID: <https://orcid.org/0000-0003-2880-7407>), Hadley Wickham [aut] (ORCID: <https://orcid.org/0000-0003-4757-117X>), Posit Software, PBC [cph, fnd]",
+      "Maintainer": "Kevin Ushey <kevin@rstudio.com>",
+      "Repository": "CRAN"
+    }
+  }
+}
