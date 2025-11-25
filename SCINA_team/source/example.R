@@ -1,6 +1,7 @@
 # Necessary packages
 if (!require("BiocManager", quietly=TRUE))
-	install.packages("BiocManager")
+	install.packages("BiocManager", 
+					 repos="http://cran.us.r-project.org")
 BiocManager::install(version = "3.22")
 BiocManager::install("preprocessCore")
 
@@ -11,8 +12,8 @@ library("SCINA")
 library("preprocessCore")
 
 # Loading .Rdata different from loading .csv
-# Implementing .csv for a more universal format, though I really doubt
-# it's standard at all.
+# Implementing .csv for a more universal format, though I really
+# doubt it's standard at all.
 
 gene_exp <- read.csv("ext/example_expmat.csv",
 	header=TRUE, row.names=1, stringsAsFactors=FALSE)
@@ -26,7 +27,12 @@ gene_exp <- log(gene_exp+1)
 gene_exp[] <- lapply(gene_exp, as.numeric)
 gene_exp_mat <- as.matrix(gene_exp)
 
+# A lot of the actual data we will be using from ssREAD will be 
+# normalized anyways, so hopefully all this will be redundant.
 gene_exp_norm <- normalize.quantiles(gene_exp_mat)
+# So apparently SCINA needs this to run. Might be the outdated
+# parts of the algorithm (last updated 4 years ago) that might be
+# necessitating all this work
 rownames(gene_exp_norm) <- rownames(gene_exp_mat)
 colnames(gene_exp_norm) <- colnames(gene_exp_mat)
 
