@@ -1,18 +1,13 @@
-# Necessary packages
-import <- function(package)
-{
-	mirror_us <- "http://cran.us.r-project.org"
-	if(!requireNamespace(package, quietly=TRUE, character.only=TRUE)) {
-		install.packages(package, repos=mirror_us)
+# https://www.bioinformatics.babraham.ac.uk/training/10XRNASeq/seurat_workflow.html#Normalisation,_Selection_and_Scaling
+# Potentially good resource
 
-		# There's gotta be a better way to do this.
-		if (package == "BiocManager") {
-			BiocManager::install(version = "3.22")
-			BiocManager::install("preprocessCore")
-		}
-	}
-	library(package, character.only=TRUE)
-}
+# Assumes the script is run from the working directory
+# and not in the source directory. 
+
+# This here thing is a little weird to use. 
+# TODO(winston): Implement a better method than this
+library(here)
+source(here("source", "layer.R"))
 
 import("BiocManager")
 import("SCINA")
@@ -20,23 +15,27 @@ import("qs")
 
 import("Seurat")
 
-download_dataset <- function(url)
-{
-	# Will change to proper download directory later
-	# (for testing purposes only)
-	download_dest <- paste("./ext/", basename(url), sep="")
-	if (!file.exists(download_dest)) {
-		print(paste("Downloading dataset", basename(url)))
-		download.file(ssread_data_url, download_dest, "curl", timeout=600)
-	} else {
-		print(paste("Dataset", basename(url), "already downloaded"))
-	}
-
-	return(download_dest)
-}
-
 # ssread_data_url <- "https://bmblx.bmi.osumc.edu/ssread_download/scrnaseq_qsave/AD03501.qsave"
-ssread_data_url <- "https://bmblx.bmi.osumc.edu/ssread_download/scrnaseq_qsave/AD00102.qsave"
-dest <- download_dataset(ssread_data_url)
 
+# Unfortunately, data redacted for this one. 
+# ssread_data_url <- "https://bmblx.bmi.osumc.edu/ssread_download/scrnaseq_qsave/AD00102.qsave"
+ssread_data_url <- "https://bmblx.bmi.osumc.edu/ssread_download/scrnaseq_qsave/AD00203.qsave"
+dest <- download_dataset(ssread_data_url, here("ext"))
 dataset <- qs::qread(dest)
+
+sig <- list (marker_genes = c("APOE", "APH1B"))
+
+# So, for reference, layers are known as:
+# count: unnormalized
+# data: normalized
+# scale.data: variance-stabilized
+gene_exp_normalized <- GetAssayData(object=dataset, assay="RNA", layer="data")
+gene_exp_mat <- as.matrix(gene_exp_normalized)
+
+result <- SCINA(gene_exp_mat, sig)
+
+#View(result$cell_labels)
+#View(result$probabilities)
+
+plotheat.SCINA(gene_exp_normalized, result, sig)
+
