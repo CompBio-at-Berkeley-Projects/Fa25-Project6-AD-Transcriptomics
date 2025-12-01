@@ -28,28 +28,19 @@ ssread_data_url <- "https://bmblx.bmi.osumc.edu/ssread_download/scrnaseq_qsave/A
 dest <- download_dataset(ssread_data_url, here("ext"))
 dataset <- qs::qread(dest)
 
-sig <- list (marker_genes = c("APOE", "APH1B"))
 
-# ChatGPT marker list sample. 
-markers <- list(
-	Astrocyte    = c("GFAP","AQP4","SLC1A2","GJA1","ALDH1L1","S100B"),
-	Excitatory   = c("CAMK2A","SYN3","RBFOX3"),
-	Inhibitory   = c("GAD1","GAD2","ERBB4","NXPH1"),
-	Microglia    = c("CX3CR1","C1QB","CSF1R","HLA-DRA","CD68","ITGAX"),
-	Oligodendrocyte = c("MBP","MOBP","PLP1","MOG","CNP"),
-	OPC          = c("PCDH15","MEGF11"),
-	Endothelial  = c("CLDN5","FLT1")
-)
-
-# More ChatGPT lol
+# Marker list
 AD_markers <- list(
-   Astrocyte = c("AQP4", "GFAP", "SLC1A2", "GJA1", "APOE"),
-   Microglia  = c("CSF1R", "CD68", "CX3CR1", "CD74", "APH1B"),
-   Oligodendrocyte = c("MBP", "MOG", "PLP1", "CNP"),
-   OPC = c("PDGFRA", "VCAN"),
-   ExcitatoryNeuron = c("SLC17A7", "CAMK2A", "STMN2"),
+   Astrocyte = c("GFAP", "AQP4", "GJA1", "SLC1A2", "FGFR3", "NKAIN4", "AGT", "PLXNB1", "SLC1A3"),
+   Microglia  = c("P2RY12", "CSF1R", "C3", "CX3CR1"),
+   Oligodendrocyte = c("OLIG2", "MBP", "MOBP", "PLP1", "MYRF", "MAG"),
+   OPC = c("VCAN", "SOX8"),
+   ExcitatoryNeuron = c("SLC17A6", "SLC17A7", "SATB2"),
    InhibitoryNeuron = c("GAD1", "GAD2"),
-   Endothelial = c("CLDN5", "FLT1", "VWF")
+   Endothelial = c("CLDN5", "VWF"),
+   Pericyte = c("AMBP", "HIGD1B", "PTH1R"),
+   Neuron = c("GLS", "RBFOX3", "CAMK2A"),
+   OurMarkers = c("APOE", "APP", "ACE", "GRN", "APH1B")
 )
 
 # So, for reference, layers are known as:
@@ -72,3 +63,23 @@ result <- SCINA(gene_exp_mat, AD_markers,
 #pdf(here("heatmap.pdf"), width=10, height=8)
 plotheat.SCINA(gene_exp_mat, result, AD_markers)
 #dev.off()
+
+#make SCINA output into a clean dataframe
+cell_labels <- result$cell_labels
+prob_mat <- result$probabilities
+
+row_index <- match(cell_labels, rownames(prob_mat))
+assigned_probs <- rep(NA, length(cell_labels))
+valid <- which(!is.na(row_index))
+
+assigned_probs[valid] <- prob_mat[cbind(row_index[valid], valid)]
+
+result_df <- data.frame(
+  cell = colnames(prob_mat),
+  label = cell_labels,
+  probability = assigned_probs
+)
+
+#bar plot below
+bar_plot <- ggplot(data = result_df, aes(x = cell_labels)) + geom_bar()
+bar_plot
