@@ -18,6 +18,7 @@ import("SCINA")
 import("qs")
 
 import("Seurat")
+import("ggplot2")
 
 # ssread_data_url <- "https://bmblx.bmi.osumc.edu/ssread_download/scrnaseq_qsave/AD03501.qsave"
 
