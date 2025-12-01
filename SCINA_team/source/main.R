@@ -54,7 +54,7 @@ gene_exp_mat <- as.matrix(gene_exp_norm)
 result <- SCINA(gene_exp_mat, AD_markers,
 				max_iter = 100, convergence_n = 10,
 				convergence_rate = 0.999, sensitivity_cutoff = 0.9,
-				rm_overlap=TRUE, allow_unknown=TRUE, log_file='SCINA.log')
+				rm_overlap=TRUE, allow_unknown=FALSE, log_file='SCINA.log')
 
 #View(result$cell_labels)
 #View(result$probabilities)
@@ -81,5 +81,5 @@ result_df <- data.frame(
 )
 
 #bar plot below
-bar_plot <- ggplot(data = result_df, aes(x = cell_labels)) + geom_bar()
+bar_plot <- ggplot(data = result_df, aes(x = cell_labels)) + geom_bar() + theme(axis.text.x = element_text(angle = 45, hjust = 1))
 bar_plot
