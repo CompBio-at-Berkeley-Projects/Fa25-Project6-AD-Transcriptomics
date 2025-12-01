@@ -69,5 +69,5 @@ result <- SCINA(gene_exp_mat, AD_markers,
 
 # theoretically, this would write heatmap to pdf
 #pdf(here("heatmap.pdf"), width=10, height=8)
-#plotheat.SCINA(gene_exp_mat, result, sig)
+plotheat.SCINA(gene_exp_mat, result, AD_markers)
 #dev.off()
