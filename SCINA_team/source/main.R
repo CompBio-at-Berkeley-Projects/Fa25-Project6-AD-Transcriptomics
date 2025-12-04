@@ -71,16 +71,17 @@ generate_barplot <- function(scina_res, output_file)
 	cell_labels <- scina_res$cell_labels
 	prob_mat <- scina_res$probabilities
 
-	row_index <- match(cell_labels, rownames(prob_mat))
-	assigned_probs <- rep(NA, length(cell_labels))
-	valid <- which(!is.na(row_index))
+	#row_index <- match(cell_labels, rownames(prob_mat))
+	#assigned_probs <- rep(NA, length(cell_labels))
+	#valid <- which(!is.na(row_index))
 
+	valid <- 1:length(cell_labels)
 	assigned_probs[valid] <- prob_mat[cbind(row_index[valid], valid)]
 
 	result_df <- data.frame(
-		cell = colnames(prob_mat),
-		label = cell_labels,
-		probability = assigned_probs
+		cell=colnames(prob_mat),
+		label=cell_labels,
+		probability=assigned_probs
 	)
 
 	cat("Generating bar plot", output_file, "\n")
@@ -131,17 +132,26 @@ SCINA_prof <- system.time({
 	result <- SCINA(gene_exp_mat, AD_markers,
 		max_iter = 100, convergence_n = 10,
 		convergence_rate = 0.999, sensitivity_cutoff = 0.9,
-		rm_overlap=TRUE, allow_unknown=FALSE, log_file="SCINA.log")
+		rm_overlap=TRUE, allow_unknown=TRUE, log_file="SCINA.log")
 })
 
 cat("SCINA complete!\n")
 
-heatplot_prof <- system.time(generate_heatplot(result, here("output", "AD00203_heatplot.png")))
-barplot_prof <- system.time(generate_barplot(result, here("output", "AD00203_barplot.png")))
+# heatplot_prof <- system.time(generate_heatplot(result, here("output", "AD00203_heatplot.png")))
+barplot_prof <- system.time(generate_barplot(result, here("output", "AD00203_barplot2.png")))
 
 cat("SCINA time\n")
 print(SCINA_prof)
-cat("heatplot time\n")
-print(heatplot_prof)
+#cat("heatplot time\n")
+#print(heatplot_prof)
 cat("barplot time\n")
 print(barplot_prof)
+
+sink(here("output", "result_celllabels.txt"))
+result$cell_labels
+sink()
+
+sink(here("output", "result_prob.txt"))
+result$probabilities
+sink()
+
