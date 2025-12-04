@@ -8,14 +8,7 @@
 # Assumes the script is run from the working directory
 # and not in the source directory. 
 
-# This here thing is a little weird to use. 
-# TODO(winston): Implement a better method than this
-# not very generic because here must first be installed
-
-wd <- getwd()
-#library(here) 
-#source(here("source", "layer.R"))
-source(paste(wd, "/source/layer.R", sep=""))
+source("source/layer.R")
 
 ################################################################################
 # NOTE(winston): ~packages~
@@ -74,8 +67,8 @@ generate_barplot <- function(scina_res, output_file)
 	cell_labels <- scina_res$cell_labels
 	prob_mat <- scina_res$probabilities
 
-	#row_index <- match(cell_labels, rownames(prob_mat))
-	#assigned_probs <- rep(NA, length(cell_labels))
+	row_index <- match(cell_labels, rownames(prob_mat))
+	ssigned_probs <- rep(NA, length(cell_labels))
 	#valid <- which(!is.na(row_index))
 
 	valid <- 1:length(cell_labels)
@@ -89,7 +82,7 @@ generate_barplot <- function(scina_res, output_file)
 
 	cat("Generating bar plot", output_file, "\n")
 	bar_plot <- ggplot(data = result_df, 
-		aes(x = label)) + geom_bar() + 
+		aes(x = cell_labels)) + geom_bar() + 
 		theme(axis.text.x = element_text(angle = 45, hjust = 1))
 	ggsave(output_file)
 }
@@ -117,7 +110,7 @@ generate_heatplot <- function(scina_res, output_file)
 # Unfortunately, data redacted for this one. 
 # ssread_data_url <- "https://bmblx.bmi.osumc.edu/ssread_download/scrnaseq_qsave/AD00102.qsave"
 ssread_data_url <- "https://bmblx.bmi.osumc.edu/ssread_download/scrnaseq_qsave/AD00203.qsave"
-dest <- download_dataset(ssread_data_url, paste(wd, "/ext", sep=""))
+dest <- download_dataset(ssread_data_url, "ext")
 dataset <- qs::qread(dest)
 
 
@@ -133,16 +126,16 @@ gene_exp_mat <- as.matrix(gene_exp_norm)
 
 cat("Running SCINA...\n")
 SCINA_prof <- system.time({
-	result <- SCINA(gene_exp_mat, AD_markers,
-		max_iter = 100, convergence_n = 10,
-		convergence_rate = 0.999, sensitivity_cutoff = 0.9,
-		rm_overlap=TRUE, allow_unknown=TRUE, log_file="SCINA.log")
+	result <- SCINA(gene_exp_mat, AD_markers, 
+		max_iter = 100, convergence_n = 10, convergence_rate = 0.999, 
+		sensitivity_cutoff = 0.9, rm_overlap=TRUE, allow_unknown=FALSE, 
+		log_file="SCINA.log")
 })
 
 cat("SCINA complete!\n")
 
-# heatplot_prof <- system.time(generate_heatplot(result, paste(wd, "/output/AD00203_heatplot.png")))
-barplot_prof <- system.time(generate_barplot(result, paste(wd, "/output/AD00203_barplot.png", sep="")))
+# heatplot_prof <- system.time(generate_heatplot(result, "output/AD00203_heatplot.png"))
+barplot_prof <- system.time(generate_barplot(result, "output/AD00203_barplot.png"))
 
 cat("SCINA time\n")
 print(SCINA_prof)
@@ -151,18 +144,22 @@ print(SCINA_prof)
 cat("barplot time\n")
 print(barplot_prof)
 
-sink(paste(wd, "/output/result_celllabels.txt", sep=""))
+sink("output/result_celllabels.txt")
 result$cell_labels
 sink()
 
-sink(paste(wd, "/output/result_prob.txt", sep=""))
+sink("output/result_prob.txt")
 result$probabilities
 sink()
 
 dataset$scina_labels <- result$cell_labels
 
 DimPlot(dataset, reduction="umap")
-ggsave(here("output", "seurat_dimplot.png"))
+ggsave("output/seurat_dimplot.png")
+
+DimPlot(dataset, reduction="umap", group.by="scina_labels")
+ggsave("output/scina_dimplot.png")
 
 FeaturePlot(dataset, reduction="umap", features=AD_markers$OurMarkers) 
-ggsave(here("output", "seurat_featureplot.png"))
+ggsave("output/seurat_featureplot.png")
+
