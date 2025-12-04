@@ -86,7 +86,7 @@ generate_barplot <- function(scina_res, output_file)
 
 	cat("Generating bar plot", output_file, "\n")
 	bar_plot <- ggplot(data = result_df, 
-		aes(x = cell_labels)) + geom_bar() + 
+		aes(x = label)) + geom_bar() + 
 		theme(axis.text.x = element_text(angle = 45, hjust = 1))
 	ggsave(output_file)
 }
