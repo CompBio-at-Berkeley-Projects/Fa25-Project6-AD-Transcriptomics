@@ -12,20 +12,23 @@
 # TODO(winston): Implement a better method than this
 # not very generic because here must first be installed
 
-library(here) 
-source(here("source", "layer.R"))
-
+wd <- getwd()
+#library(here) 
+#source(here("source", "layer.R"))
+source(paste(wd, "/source/layer.R", sep=""))
 
 ################################################################################
 # NOTE(winston): ~packages~
 
 import("BiocManager")
+
 import("SCINA")
 import("qs")
 
 import("Seurat")
-import("ggplot2")
 
+import("ggplot2")
+import("cowplot")
 
 
 
@@ -93,7 +96,8 @@ generate_barplot <- function(scina_res, output_file)
 
 generate_heatplot <- function(scina_res, output_file)
 {
-	pdf(output_file)
+	#TODO(winston): allow for more filetypes
+	png(output_file)
 	cat("Generating heatmap", output_file, "\n")
 	plotheat.SCINA(gene_exp_mat, result, AD_markers)
 	cat("Heatmap generated\n")
@@ -113,7 +117,7 @@ generate_heatplot <- function(scina_res, output_file)
 # Unfortunately, data redacted for this one. 
 # ssread_data_url <- "https://bmblx.bmi.osumc.edu/ssread_download/scrnaseq_qsave/AD00102.qsave"
 ssread_data_url <- "https://bmblx.bmi.osumc.edu/ssread_download/scrnaseq_qsave/AD00203.qsave"
-dest <- download_dataset(ssread_data_url, here("ext"))
+dest <- download_dataset(ssread_data_url, paste(wd, "/ext", sep=""))
 dataset <- qs::qread(dest)
 
 
@@ -137,8 +141,8 @@ SCINA_prof <- system.time({
 
 cat("SCINA complete!\n")
 
-# heatplot_prof <- system.time(generate_heatplot(result, here("output", "AD00203_heatplot.png")))
-barplot_prof <- system.time(generate_barplot(result, here("output", "AD00203_barplot2.png")))
+# heatplot_prof <- system.time(generate_heatplot(result, paste(wd, "/output/AD00203_heatplot.png")))
+barplot_prof <- system.time(generate_barplot(result, paste(wd, "/output/AD00203_barplot.png", sep="")))
 
 cat("SCINA time\n")
 print(SCINA_prof)
@@ -147,11 +151,18 @@ print(SCINA_prof)
 cat("barplot time\n")
 print(barplot_prof)
 
-sink(here("output", "result_celllabels.txt"))
+sink(paste(wd, "/output/result_celllabels.txt", sep=""))
 result$cell_labels
 sink()
 
-sink(here("output", "result_prob.txt"))
+sink(paste(wd, "/output/result_prob.txt", sep=""))
 result$probabilities
 sink()
 
+dataset$scina_labels <- result$cell_labels
+
+DimPlot(dataset, reduction="umap")
+ggsave(here("output", "seurat_dimplot.png"))
+
+FeaturePlot(dataset, reduction="umap", features=AD_markers$OurMarkers) 
+ggsave(here("output", "seurat_featureplot.png"))
