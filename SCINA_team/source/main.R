@@ -46,7 +46,6 @@ AD_markers <- list(
 
 our_markers <- c("APOE", "APP", "ACE", "GRN", "APH1B")
 
-
 ################################################################################
 # NOTE(winston): ~functions~
 download_dataset <- function(url, dir)
