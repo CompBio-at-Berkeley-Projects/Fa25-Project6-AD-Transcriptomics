@@ -225,7 +225,7 @@ process_dataset_qsave <- function(qsave_dest, output_dir)
 	bp_path <- paste(output_dir, "/barplot.png", sep="")
 	hp_path <- paste(output_dir, "/heatplot.png", sep="")
 
-	seurat_dp_path <- paste(output_dir, "/seurat_barplot.png", sep="")
+	seurat_dp_path <- paste(output_dir, "/seurat_dimplot.png", sep="")
 	seurat_fp_path <- paste(output_dir, "/seurat_featureplot.png", sep="")
 
 	scina_dp_path  <- paste(output_dir, "/scina_dimplot.png", sep="")
@@ -273,7 +273,7 @@ process_dataset_qsave_seuratv5 <- function(qsave_dest, output_dir)
 	bp_path <- paste(output_dir, "/barplot.png", sep="")
 	hp_path <- paste(output_dir, "/heatplot.png", sep="")
 
-	seurat_dp_path <- paste(output_dir, "/seurat_barplot.png", sep="")
+	seurat_dp_path <- paste(output_dir, "/seurat_dimplot.png", sep="")
 	seurat_fp_path <- paste(output_dir, "/seurat_featureplot.png", sep="")
 
 	scina_dp_path  <- paste(output_dir, "/scina_dimplot.png", sep="")
@@ -359,10 +359,11 @@ control_url <- "https://bmblx.bmi.osumc.edu/ssread_download/scrnaseq_qsave/AD002
 # process_dataset_from_url(disease_url)
 # process_dataset_from_url(control_url)
 
-dataset_name <- "GSE157827_AD"
+#dataset_name <- "GSE157827_AD"
+dataset_name <- "GSE157827_NC"
 output_dir <- paste("output/", dataset_name, sep="")
 if (!dir.exists("output")) dir.create("output")
 if (!dir.exists(output_dir)) dir.create(output_dir)
 
-process_dataset_qsave_seuratv5("ext/GSE157827_merged_seurat.qs", output_dir)
-
+#process_dataset_qsave_seuratv5("ext/GSE157827_AC_only.qs", output_dir)
+process_dataset_qsave_seuratv5("ext/GSE157827_NC_only.qs", output_dir)
