@@ -26,11 +26,12 @@ import("ggplot2")
 import("cowplot")
 
 import("tools")
+import("Matrix")
 
 ################################################################################
 # ~global variables~
 # Marker list
-cell_label_key <- list(
+cell_markers <- list(
 	Oligodendrocyte = c("OLIG2", "MBP", "MOBP", "PLP1", "MYRF", "MAG"),
 	Astrocyte = c("GFAP", "AQP4", "GJA1", "SLC1A2", "FGFR3", "NKAIN4", 
 		"AGT", "PLXNB1", "SLC1A3"),
@@ -44,7 +45,7 @@ cell_label_key <- list(
 	OurMarkers = c("APOE", "APP", "ACE", "GRN", "APH1B")
 )
 
-our_markers <- cell_label_key[["OurMarkers"]] 
+our_markers <- cell_markers[["OurMarkers"]] 
 
 ################################################################################
 # ~functions~
@@ -54,8 +55,8 @@ download_dataset <- function(url, dir)
 	# (for testing purposes only)
 	download_dest <- paste(dir, basename(url), sep="/")
 	if (!file.exists(download_dest)) {
-		print(paste("Downloading dataset", basename(url)))
-		download.file(url, download_dest, "curl", timeout=600)
+		cat("Downloading dataset", basename(url), "\n")
+		download.file(url, download_dest, "curl", timeou=600)
 	} else {
 		cat("Dataset", basename(url), "already downloaded\n")
 	}
@@ -63,6 +64,8 @@ download_dataset <- function(url, dir)
 	return(download_dest)
 }
 
+# Building plots
+# TODO(wv): Consider whether this should include Unknown or no. 
 gen_bp <- function(data, output_file)
 {
 	#make SCINA output into a clean dataframe
@@ -89,12 +92,12 @@ gen_bp <- function(data, output_file)
 	ggsave(output_file)
 }
 
-gen_hp <- function(data, output_file)
+gen_hp <- function(data, output_file, markers)
 {
 	#TODO(wv): allow for more filetypes
 	png(output_file)
 	cat("Generating heatmap...", output_file, "\n")
-	plotheat.SCINA(gene_exp_mat, data$scina_res, cell_label_key)
+	plotheat.SCINA(gene_exp_mat, data$scina_res, data$markers)
 	dev.off()
 }
 
@@ -141,21 +144,20 @@ gen_scina_mp <- function(data, output)
 	ggsave(output)
 }
 
-scina_process <- function(dataset)
+# processing
+scina_process <- function(dataset, gene_exp_mat, output_dir)
 {
-	# So, for reference, layers are known as:
-	# count: unnormalized
-	# data: normalized
-	# scale.data: variance-stabilized
-	gene_exp_norm <- GetAssayData(object=dataset, assay="RNA", layer="data")
-	gene_exp_mat <- as.matrix(gene_exp_norm)
-
+	# Exclude all cell types with no detectable markers
+	markers_final <- lapply(cell_markers, 
+		function(m) m[m %in% rownames(dataset)])	
+	markers_final <- markers_final[lengths(markers_final) > 0]
+		
 	# Using SCINA settings from the SCINA github
 	# Profiling using system.time instead of Rprof (may change)
 	# This SCINA stuff and assignment for the unknowns still need 
 	# some tweaking
 	cat("Running SCINA...\n")
-	result <- SCINA(gene_exp_mat, cell_label_key, 
+	result <- SCINA(gene_exp_mat, markers_final, 
 		max_iter = 200, convergence_n = 10, convergence_rate = 0.999, 
 		sensitivity_cutoff = 0.9, rm_overlap=TRUE, allow_unknown=TRUE, 
 		log_file="SCINA.log")
@@ -200,60 +202,46 @@ scina_process <- function(dataset)
 		}
 	}
 
-	#cluster_majority <- dataset@meta.data %>%
-	#	group_by(seurat_clusters) %>%
-	#	filter(scina_labels != "unknown") %>%
-	#	summarize(major_label=
-	#		names(which.max(table(scina_labels))))
-	# better_labels <- dataset$scina_labels
-
-	#for (cluster in unique(dataset$seurat_clusters)) {
-	#	majority <- cluster_majority$
-	#		major_label[cluster_majority$seurat_clusters == cluster]
-	#	unknown <- WhichCells(dataset, 
-	#		expression=(scina_labels=="unknown" & 
-	#			seurat_clusters == cluster))
-	#	better_labels[unknown] <- majority
-	#}
-
 	dataset$scina_but_better_labels <- better_labels
-	#sink("output/result_celllabels.txt")
-	#result$cell_labels
-	#sink()
+	sink(paste(output_dir, "/celllabels.txt", sep=""))
+	print(result$cell_labels)
+	sink()
 
-	#sink("output/result_prob.txt")
-	#result$probabilities
-	#sink()
+	sink(paste(output_dir, "/probabilities.txt", sep=""))
+	print(result$probabilities)
+	sink()
 
 	result <- list(
 		data=dataset,
-		scina_res=result
+		scina_res=result,
+		markers=markers_final
 	)
 
 	return(result)
 }
 
-process_dataset_from_url <- function(url)
+process_dataset_qsave <- function(qsave_dest, output_dir)
 {
-	dataset_name <- file_path_sans_ext(basename(url))
-	output_dir <- paste("output/", dataset_name, sep="")
-
-	if (!dir.exists("output")) dir.create("output")
-	if (!dir.exists(output_dir)) dir.create(output_dir)
-
 	bp_path <- paste(output_dir, "/barplot.png", sep="")
 	hp_path <- paste(output_dir, "/heatplot.png", sep="")
 
 	seurat_dp_path <- paste(output_dir, "/seurat_barplot.png", sep="")
 	seurat_fp_path <- paste(output_dir, "/seurat_featureplot.png", sep="")
 
-	scina_dp_path  <- paste(output_dir, "/scina_barplot.png", sep="")
-	scina_bdp_path <- paste(output_dir, "/scina_better_barplot.png", sep="")
+	scina_dp_path  <- paste(output_dir, "/scina_dimplot.png", sep="")
+	scina_bdp_path <- paste(output_dir, "/scina_better_dimplot.png", sep="")
 	scina_mp_path  <- paste(output_dir, "/scina_markerplot.png", sep="")
 
-	dest <- download_dataset(url, output_dir)
-	dataset <- qs::qread(dest)
-	result <- scina_process(dataset)
+	dataset <- qs::qread(qsave_dest)
+
+	# So, for reference, layers are known as:
+	# count: unnormalized
+	# data: normalized
+	# scale.data: variance-stabilized
+	gene_exp_norm <- GetAssayData(object=dataset, assay="RNA", layer="data")
+	gene_exp_mat <- as.matrix(gene_exp_norm)
+	
+	result <- scina_process(dataset, gene_exp_mat, output_dir)
 	
 	# NOTE(wv): too slow to run for debug purposes
 	# gen_hp(result, hp_path)
@@ -267,7 +255,98 @@ process_dataset_from_url <- function(url)
 	gen_scina_mp(result, scina_mp_path)
 }
 
+process_dataset_from_url <- function(url)
+{
+	dataset_name <- file_path_sans_ext(basename(url))
+	output_dir <- paste("output/", dataset_name, sep="")
 
+	if (!dir.exists("output")) dir.create("output")
+	if (!dir.exists(output_dir)) dir.create(output_dir)
+
+	dest <- download_dataset(url, output_dir)
+	process_dataset_qsave(dest, output_dir)
+}
+
+
+process_dataset_qsave_seuratv5 <- function(qsave_dest, output_dir)
+{
+	bp_path <- paste(output_dir, "/barplot.png", sep="")
+	hp_path <- paste(output_dir, "/heatplot.png", sep="")
+
+	seurat_dp_path <- paste(output_dir, "/seurat_barplot.png", sep="")
+	seurat_fp_path <- paste(output_dir, "/seurat_featureplot.png", sep="")
+
+	scina_dp_path  <- paste(output_dir, "/scina_dimplot.png", sep="")
+	scina_bdp_path <- paste(output_dir, "/scina_better_dimplot.png", sep="")
+	scina_mp_path  <- paste(output_dir, "/scina_markerplot.png", sep="")
+
+	dataset <- qs::qread(qsave_dest)
+	
+	layers <- Layers(dataset, assay="RNA")[grepl("^data", 
+		Layers(dataset, assay="RNA"))]
+
+	# Exclude all cell types with no detectable markers
+	markers_final <- lapply(cell_markers, 
+		function(m) m[m %in% rownames(dataset)])	
+	markers_final <- markers_final[lengths(markers_final) > 0]
+	
+	all_labels <- list()
+	all_probs <- list()
+	for (l in layers) {
+		mat <- GetAssayData(dataset, assay="RNA", layer=l)
+		#mat <- mat[intersect(markers_final, rownames(mat)), , drop=FALSE]
+		mat_scina <- as.matrix(mat)
+		
+		cat("Running SCINA on", "layer", l, "...\n")
+		result <- SCINA(mat_scina, markers_final, 
+			max_iter = 200, convergence_n = 10, convergence_rate = 0.999, 
+			sensitivity_cutoff = 0.9, rm_overlap=TRUE, allow_unknown=TRUE, 
+			log_file="SCINA.log")
+		cells <- colnames(mat_scina)
+		labels <- result$cell_labels
+		names(labels) <- cells
+
+		all_labels[[l]] <- labels 
+		all_probs[[l]] <- result$probabilities
+	}
+	
+	scina_labels <- c()	
+	for (l in names(all_labels)) {
+		labels <- all_labels[[l]]
+		scina_labels <- c(scina_labels, labels)
+	}
+	
+	#scina_probs <- do.call(rbind, all_probs)
+	#rownames(scina_probs) <- names(scina_labels)
+	
+	#browser()	
+	print("sample")	
+	# scina_labels <- unlist(all_labels)
+	# scina_labels <- unlist(lapply(all_labels, function(x) {x}, use.names=TRUE))
+
+	scina_labels <- scina_labels[colnames(dataset)]
+	dataset$scina_labels <- scina_labels
+
+	result <- list(
+		data=dataset,
+		scina_res=result,
+		markers=markers_final
+	)
+
+
+	#result <- scina_process(merged_mat, output_dir)
+	
+	# NOTE(wv): too slow to run for debug purposes
+	# gen_hp(result, hp_path)
+	#gen_bp(result, bp_path)
+
+	gen_seurat_dp(result, seurat_dp_path)
+	gen_seurat_fp(result, seurat_fp_path)
+
+	gen_scina_dp(result, scina_dp_path)
+	#gen_scina_bdp(result, scina_bdp_path)
+	#gen_scina_mp(result, scina_mp_path)
+}
 
 ################################################################################
 # NOTE(wv): ~main code~
@@ -275,5 +354,15 @@ process_dataset_from_url <- function(url)
 # Unfortunately, data redacted for this one. 
 # ssread_data_url <- "https://bmblx.bmi.osumc.edu/ssread_download/scrnaseq_qsave/AD00102.qsave"
 disease_url <- "https://bmblx.bmi.osumc.edu/ssread_download/scrnaseq_qsave/AD00203.qsave"
+control_url <- "https://bmblx.bmi.osumc.edu/ssread_download/scrnaseq_qsave/AD00202.qsave"
 
-process_dataset_from_url(disease_url)
+# process_dataset_from_url(disease_url)
+# process_dataset_from_url(control_url)
+
+dataset_name <- "GSE157827_AD"
+output_dir <- paste("output/", dataset_name, sep="")
+if (!dir.exists("output")) dir.create("output")
+if (!dir.exists(output_dir)) dir.create(output_dir)
+
+process_dataset_qsave_seuratv5("ext/GSE157827_merged_seurat.qs", output_dir)
+
