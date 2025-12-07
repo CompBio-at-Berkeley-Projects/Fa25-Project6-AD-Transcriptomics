@@ -132,7 +132,7 @@ gen_scina_bdp <- function(result, output)
 
 gen_scina_mp <- function(data, output)
 {
-	cat("Generating SCINA DimPlot marker plot", output, "...\n")
+	cat("Generating better SCINA DimPlot marker plot", output, "...\n")
 
 	dataset <- data$data
 	
@@ -166,9 +166,6 @@ scina_process <- function(dataset, gene_exp_mat, output_dir)
 	names(dataset$scina_labels) <- colnames(dataset)
 
 	better_labels <- dataset$scina_labels
-
-	cluster_majority <- list()
-
 	for (cluster in unique(dataset@meta.data$seurat_clusters)) {
 		cells <- which(dataset$seurat_clusters == cluster)
 		labels <- dataset$scina_labels[cells]
@@ -220,8 +217,16 @@ scina_process <- function(dataset, gene_exp_mat, output_dir)
 	return(result)
 }
 
-process_dataset_qsave <- function(qsave_dest, output_dir)
+process_dataset_qsave <- function(qsave_dest)
 {
+	cat("Processing dataset at", qsave_dest, "\n")
+
+	dataset_name <- file_path_sans_ext(basename(qsave_dest))
+	output_dir <- paste("output/", dataset_name, sep="")
+
+	if (!dir.exists("output")) dir.create("output")
+	if (!dir.exists(output_dir)) dir.create(output_dir)
+
 	bp_path <- paste(output_dir, "/barplot.png", sep="")
 	hp_path <- paste(output_dir, "/heatplot.png", sep="")
 
@@ -255,21 +260,22 @@ process_dataset_qsave <- function(qsave_dest, output_dir)
 	gen_scina_mp(result, scina_mp_path)
 }
 
-process_dataset_from_url <- function(url)
+process_dataset_from_url <- function(url, download_dir)
 {
-	dataset_name <- file_path_sans_ext(basename(url))
+	dest <- download_dataset(url, download_dir)
+	process_dataset_qsave(dest)
+}
+
+process_dataset_qsave_seuratv5 <- function(qsave_dest)
+{
+	cat("Processing dataset at", qsave_dest, "\n")
+
+	dataset_name <- file_path_sans_ext(basename(qsave_dest))
 	output_dir <- paste("output/", dataset_name, sep="")
 
 	if (!dir.exists("output")) dir.create("output")
 	if (!dir.exists(output_dir)) dir.create(output_dir)
 
-	dest <- download_dataset(url, output_dir)
-	process_dataset_qsave(dest, output_dir)
-}
-
-
-process_dataset_qsave_seuratv5 <- function(qsave_dest, output_dir)
-{
 	bp_path <- paste(output_dir, "/barplot.png", sep="")
 	hp_path <- paste(output_dir, "/heatplot.png", sep="")
 
@@ -290,6 +296,8 @@ process_dataset_qsave_seuratv5 <- function(qsave_dest, output_dir)
 		function(m) m[m %in% rownames(dataset)])	
 	markers_final <- markers_final[lengths(markers_final) > 0]
 	
+	# Process dataset by running SCINA on each layer and merging the results when done
+	# Only works when the cells are different, which they thankfully are
 	all_labels <- list()
 	all_probs <- list()
 	for (l in layers) {
@@ -315,24 +323,54 @@ process_dataset_qsave_seuratv5 <- function(qsave_dest, output_dir)
 		labels <- all_labels[[l]]
 		scina_labels <- c(scina_labels, labels)
 	}
-	
-	#scina_probs <- do.call(rbind, all_probs)
-	#rownames(scina_probs) <- names(scina_labels)
-	
-	#browser()	
-	print("sample")	
-	# scina_labels <- unlist(all_labels)
-	# scina_labels <- unlist(lapply(all_labels, function(x) {x}, use.names=TRUE))
-
 	scina_labels <- scina_labels[colnames(dataset)]
 	dataset$scina_labels <- scina_labels
 
+	better_labels <- dataset$scina_labels
+	for (cluster in unique(dataset@meta.data$seurat_clusters)) {
+		cells <- which(dataset$seurat_clusters == cluster)
+		labels <- dataset$scina_labels[cells]
+		known <- labels[labels != "unknown"]
+		
+		if (length(known) > 0) {
+			tabl <- table(known)
+			max <- which.max(tabl)
+			majority <- names(max)
+
+			# NOTE(wv): length(tabl) > 1 will consider all unknowns 
+			# as "OurMarkers" assuming they are in the same cluster 
+			# as cells which are all of "OurMarkers". There might 
+			# also be an edge case where there are substantially
+			# more of "OurMarkers than there are the other types.
+			# Don't know how we should handle that. 
+
+			# The idea right now is that a false negative is
+			# preferable, in this case, to a false positive, but we
+			# will only see on the long run how practical this will
+			# be. 
+			if (majority == "OurMarkers" && length(tabl) > 1) {
+				new_max <- which.max(tabl[tabl != max(tabl)])
+				majority <- names(new_max)
+			}
+			
+			unknown <- cells[labels == "unknown"]
+			if (length(unknown) > 0) {
+				better_labels[unknown] <- majority
+			}
+		}
+	}
+
+	dataset$scina_but_better_labels <- better_labels
+
 	result <- list(
 		data=dataset,
-		scina_res=result,
+		# scina_res=result, not here yet
 		markers=markers_final
 	)
-
+	dataset$scina_labels <- factor(dataset$scina_labels,
+		levels=c(setdiff(levels(dataset$scina_labels), "OurMarkers"), "OurMarkers"))
+	dataset$scina_but_better_labels <- factor(dataset$scina_but_better_labels,
+		levels=c(setdiff(levels(dataset$scina_but_better_labels), "OurMarkers"), "OurMarkers"))
 
 	#result <- scina_process(merged_mat, output_dir)
 	
@@ -344,8 +382,8 @@ process_dataset_qsave_seuratv5 <- function(qsave_dest, output_dir)
 	gen_seurat_fp(result, seurat_fp_path)
 
 	gen_scina_dp(result, scina_dp_path)
-	#gen_scina_bdp(result, scina_bdp_path)
-	#gen_scina_mp(result, scina_mp_path)
+	gen_scina_bdp(result, scina_bdp_path)
+	gen_scina_mp(result, scina_mp_path)
 }
 
 ################################################################################
@@ -356,14 +394,8 @@ process_dataset_qsave_seuratv5 <- function(qsave_dest, output_dir)
 disease_url <- "https://bmblx.bmi.osumc.edu/ssread_download/scrnaseq_qsave/AD00203.qsave"
 control_url <- "https://bmblx.bmi.osumc.edu/ssread_download/scrnaseq_qsave/AD00202.qsave"
 
-# process_dataset_from_url(disease_url)
-# process_dataset_from_url(control_url)
+# process_dataset_from_url(disease_url, "ext")
+# process_dataset_from_url(control_url, "ext")
 
-#dataset_name <- "GSE157827_AD"
-dataset_name <- "GSE157827_NC"
-output_dir <- paste("output/", dataset_name, sep="")
-if (!dir.exists("output")) dir.create("output")
-if (!dir.exists(output_dir)) dir.create(output_dir)
-
-#process_dataset_qsave_seuratv5("ext/GSE157827_AC_only.qs", output_dir)
-process_dataset_qsave_seuratv5("ext/GSE157827_NC_only.qs", output_dir)
+process_dataset_qsave_seuratv5("ext/GSE157827_AD.qs")
+process_dataset_qsave_seuratv5("ext/GSE157827_NC.qs")

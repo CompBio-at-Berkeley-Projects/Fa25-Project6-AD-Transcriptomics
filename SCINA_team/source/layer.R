@@ -4,7 +4,7 @@ import <- function(package)
 {
 	mirror_us <- "http://cran.us.r-project.org"
 	if(!requireNamespace(package, quietly=TRUE, character.only=TRUE)) {
-		install.packages(package, repos=mirror_us)
+		install.packages(package, quiet=true, repos=mirror_us)
 
 		# There's gotta be a better way to do this.
 		if (package == "BiocManager") {
