@@ -40,8 +40,8 @@ cell_markers <- list(
 	Microglia  = c("P2RY12", "CSF1R", "C3", "CX3CR1"),
 	ExcitatoryNeuron = c("SLC17A6", "SLC17A7", "SATB2"),
 	InhibitoryNeuron = c("GAD1", "GAD2"),
-	#Pericyte = c("AMBP", "HIGD1B", "PTH1R"),
-	#Neuron = c("GLS", "RBFOX3", "CAMK2A"),
+	Pericyte = c("AMBP", "HIGD1B", "PTH1R"),
+	Neuron = c("GLS", "RBFOX3", "CAMK2A"),
 	OurMarkers = c("APOE", "APP", "ACE", "GRN", "APH1B")
 )
 
@@ -101,51 +101,85 @@ gen_hp <- function(data, output_file, markers)
 	dev.off()
 }
 
-gen_seurat_dp <- function(result, output)
+gen_seurat_dp <- function(dataset, output_dir)
 {
+	output <- paste(output_dir, "/seurat_dimplot.png", sep="")
+
 	cat("Generating DimPlot", output, "...\n")
-	DimPlot(result$data, reduction="umap")
+	DimPlot(dataset, reduction="umap") + ggtitle("Seurat Clusters")
 	ggsave(output)
 }
 
-gen_seurat_fp <- function(result, output)
+gen_seurat_fp <- function(dataset, output_dir)
 {
-	cat("Generating FeaturePlot", output, "...\n")
-	FeaturePlot(result$data, reduction="umap", features=our_markers) 
-	ggsave(output)
+	all <- paste(output_dir, "/seurat_featureplot_all.png", sep="")
+
+	cat("Generating FeaturePlot", all, "...\n")
+	FeaturePlot(dataset, reduction="umap", features=our_markers)
+	ggsave(all)
+
+	for (marker in our_markers) {
+		output <- paste(output_dir, "/seurat_featureplot_",
+			marker, ".png", sep="")
+		cat("Generating FeaturePlot", output, "...\n")
+		FeaturePlot(dataset, reduction="umap", features=c(marker)) 
+		ggsave(output)
+	}
 }
 
-gen_scina_dp <- function(result, output)
+gen_scina_dp <- function(dataset, output_dir)
 {
+	output <- paste(output_dir, "/scina_dimplot.png", sep="")
 	cat("Generating SCINA DimPlot", output, "...\n")
-	DimPlot(result$data, reduction="umap", group.by="scina_labels")
+	all <- DimPlot(dataset, reduction="umap", group.by="scina_labels") +
+		ggtitle("Seurat Clusters (SCINA Cell Labelling)")
 	ggsave(output)
 }
 
-gen_scina_bdp <- function(result, output)
+gen_scina_bdp <- function(dataset, output_dir)
 {
+	output <- paste(output_dir, "/scina_better_dimplot.png", sep="")
 	cat("Generating better SCINA DimPlot", output, "...\n")
-	DimPlot(result$data, reduction="umap",
-		group.by="scina_but_better_labels")
+	DimPlot(dataset, reduction="umap",
+		group.by="scina_but_better_labels") +
+		ggtitle("Seurat Clusters (SCINA Cell Labelling)")
 	ggsave(output)
 }
 
-gen_scina_mp <- function(data, output)
+gen_scina_mp <- function(dataset, output_dir)
 {
+	output  <- paste(output_dir, "/scina_markerplot.png", sep="")
 	cat("Generating better SCINA DimPlot marker plot", output, "...\n")
 
-	dataset <- data$data
-	
 	cells <- WhichCells(dataset,
 		expression=(scina_but_better_labels == "OurMarkers"))
 
 	DimPlot(dataset, cells.highlight=cells, 
-		cols.highlight="red", cols="grey80")
+		cols.highlight="red", cols="grey80") +
+		ggtitle("AD Markers Plot")
 	ggsave(output)
 }
 
+gen_plots <- function(dataset, output_dir)
+{
+	#bp_path <- paste(output_dir, "/barplot.png", sep="")
+	#hp_path <- paste(output_dir, "/heatplot.png", sep="")
+
+
+	# NOTE(wv): too slow to run for debug purposes
+	# gen_hp(result, hp_path)
+	# gen_bp(result, bp_path)
+
+	gen_seurat_dp(dataset, output_dir)
+	gen_seurat_fp(dataset, output_dir)
+
+	gen_scina_dp(dataset, output_dir)
+	gen_scina_bdp(dataset, output_dir)
+	gen_scina_mp(dataset, output_dir)
+}
+
 # processing
-scina_process <- function(dataset, gene_exp_mat, output_dir)
+scina_process <- function(dataset, gene_exp_mat)
 {
 	# Exclude all cell types with no detectable markers
 	markers_final <- lapply(cell_markers, 
@@ -156,19 +190,22 @@ scina_process <- function(dataset, gene_exp_mat, output_dir)
 	# Profiling using system.time instead of Rprof (may change)
 	# This SCINA stuff and assignment for the unknowns still need 
 	# some tweaking
-	cat("Running SCINA...\n")
 	result <- SCINA(gene_exp_mat, markers_final, 
 		max_iter = 200, convergence_n = 10, convergence_rate = 0.999, 
 		sensitivity_cutoff = 0.9, rm_overlap=TRUE, allow_unknown=TRUE, 
 		log_file="SCINA.log")
+	
+	names(result$cell_labels) <- colnames(gene_exp_mat)
 
-	dataset$scina_labels <- result$cell_labels
-	names(dataset$scina_labels) <- colnames(dataset)
+	return(result)
+}
 
-	better_labels <- dataset$scina_labels
+scina_process_unknowns <- function(dataset, labels_all)
+{
+	better_labels <- labels_all
 	for (cluster in unique(dataset@meta.data$seurat_clusters)) {
 		cells <- which(dataset$seurat_clusters == cluster)
-		labels <- dataset$scina_labels[cells]
+		labels <- labels_all[cells]
 		known <- labels[labels != "unknown"]
 		
 		if (length(known) > 0) {
@@ -199,22 +236,7 @@ scina_process <- function(dataset, gene_exp_mat, output_dir)
 		}
 	}
 
-	dataset$scina_but_better_labels <- better_labels
-	sink(paste(output_dir, "/celllabels.txt", sep=""))
-	print(result$cell_labels)
-	sink()
-
-	sink(paste(output_dir, "/probabilities.txt", sep=""))
-	print(result$probabilities)
-	sink()
-
-	result <- list(
-		data=dataset,
-		scina_res=result,
-		markers=markers_final
-	)
-
-	return(result)
+	return(better_labels)
 }
 
 process_dataset_qsave <- function(qsave_dest)
@@ -227,16 +249,6 @@ process_dataset_qsave <- function(qsave_dest)
 	if (!dir.exists("output")) dir.create("output")
 	if (!dir.exists(output_dir)) dir.create(output_dir)
 
-	bp_path <- paste(output_dir, "/barplot.png", sep="")
-	hp_path <- paste(output_dir, "/heatplot.png", sep="")
-
-	seurat_dp_path <- paste(output_dir, "/seurat_dimplot.png", sep="")
-	seurat_fp_path <- paste(output_dir, "/seurat_featureplot.png", sep="")
-
-	scina_dp_path  <- paste(output_dir, "/scina_dimplot.png", sep="")
-	scina_bdp_path <- paste(output_dir, "/scina_better_dimplot.png", sep="")
-	scina_mp_path  <- paste(output_dir, "/scina_markerplot.png", sep="")
-
 	dataset <- qs::qread(qsave_dest)
 
 	# So, for reference, layers are known as:
@@ -246,18 +258,16 @@ process_dataset_qsave <- function(qsave_dest)
 	gene_exp_norm <- GetAssayData(object=dataset, assay="RNA", layer="data")
 	gene_exp_mat <- as.matrix(gene_exp_norm)
 	
-	result <- scina_process(dataset, gene_exp_mat, output_dir)
+	cat("Running SCINA...\n")
+	scina_res <- scina_process(dataset, gene_exp_mat)
+	dataset$scina_labels <- scina_res$cell_labels
 	
-	# NOTE(wv): too slow to run for debug purposes
-	# gen_hp(result, hp_path)
-	gen_bp(result, bp_path)
+	cat("Processing unknowns...\n")
+	better_labels <- scina_process_unknowns(dataset, dataset$scina_labels)	
+	dataset$scina_but_better_labels <- better_labels
 
-	gen_seurat_dp(result, seurat_dp_path)
-	gen_seurat_fp(result, seurat_fp_path)
-
-	gen_scina_dp(result, scina_dp_path)
-	gen_scina_bdp(result, scina_bdp_path)
-	gen_scina_mp(result, scina_mp_path)
+	cat("Generating plots...\n")
+	gen_plots(dataset, output_dir)
 }
 
 process_dataset_from_url <- function(url, download_dir)
@@ -276,114 +286,47 @@ process_dataset_qsave_seuratv5 <- function(qsave_dest)
 	if (!dir.exists("output")) dir.create("output")
 	if (!dir.exists(output_dir)) dir.create(output_dir)
 
-	bp_path <- paste(output_dir, "/barplot.png", sep="")
-	hp_path <- paste(output_dir, "/heatplot.png", sep="")
-
-	seurat_dp_path <- paste(output_dir, "/seurat_dimplot.png", sep="")
-	seurat_fp_path <- paste(output_dir, "/seurat_featureplot.png", sep="")
-
-	scina_dp_path  <- paste(output_dir, "/scina_dimplot.png", sep="")
-	scina_bdp_path <- paste(output_dir, "/scina_better_dimplot.png", sep="")
-	scina_mp_path  <- paste(output_dir, "/scina_markerplot.png", sep="")
-
 	dataset <- qs::qread(qsave_dest)
-	
 	layers <- Layers(dataset, assay="RNA")[grepl("^data", 
 		Layers(dataset, assay="RNA"))]
 
-	# Exclude all cell types with no detectable markers
-	markers_final <- lapply(cell_markers, 
-		function(m) m[m %in% rownames(dataset)])	
-	markers_final <- markers_final[lengths(markers_final) > 0]
-	
 	# Process dataset by running SCINA on each layer and merging the results when done
-	# Only works when the cells are different, which they thankfully are
+	# Technically only works when the cells are different, which they thankfully are
 	all_labels <- list()
 	all_probs <- list()
+
 	for (l in layers) {
 		mat <- GetAssayData(dataset, assay="RNA", layer=l)
-		#mat <- mat[intersect(markers_final, rownames(mat)), , drop=FALSE]
 		mat_scina <- as.matrix(mat)
 		
 		cat("Running SCINA on", "layer", l, "...\n")
-		result <- SCINA(mat_scina, markers_final, 
-			max_iter = 200, convergence_n = 10, convergence_rate = 0.999, 
-			sensitivity_cutoff = 0.9, rm_overlap=TRUE, allow_unknown=TRUE, 
-			log_file="SCINA.log")
-		cells <- colnames(mat_scina)
-		labels <- result$cell_labels
-		names(labels) <- cells
+		scina_res <- scina_process(dataset, mat_scina)
 
-		all_labels[[l]] <- labels 
-		all_probs[[l]] <- result$probabilities
+		all_labels[[l]] <- scina_res$cell_labels
+		all_probs[[l]] <- scina_res$probabilities
 	}
 	
+	# Merge all labels together	
 	scina_labels <- c()	
 	for (l in names(all_labels)) {
 		labels <- all_labels[[l]]
 		scina_labels <- c(scina_labels, labels)
 	}
+
 	scina_labels <- scina_labels[colnames(dataset)]
 	dataset$scina_labels <- scina_labels
-
-	better_labels <- dataset$scina_labels
-	for (cluster in unique(dataset@meta.data$seurat_clusters)) {
-		cells <- which(dataset$seurat_clusters == cluster)
-		labels <- dataset$scina_labels[cells]
-		known <- labels[labels != "unknown"]
-		
-		if (length(known) > 0) {
-			tabl <- table(known)
-			max <- which.max(tabl)
-			majority <- names(max)
-
-			# NOTE(wv): length(tabl) > 1 will consider all unknowns 
-			# as "OurMarkers" assuming they are in the same cluster 
-			# as cells which are all of "OurMarkers". There might 
-			# also be an edge case where there are substantially
-			# more of "OurMarkers than there are the other types.
-			# Don't know how we should handle that. 
-
-			# The idea right now is that a false negative is
-			# preferable, in this case, to a false positive, but we
-			# will only see on the long run how practical this will
-			# be. 
-			if (majority == "OurMarkers" && length(tabl) > 1) {
-				new_max <- which.max(tabl[tabl != max(tabl)])
-				majority <- names(new_max)
-			}
-			
-			unknown <- cells[labels == "unknown"]
-			if (length(unknown) > 0) {
-				better_labels[unknown] <- majority
-			}
-		}
-	}
-
+	
+	cat("Processing unknowns...\n")
+	better_labels <- scina_process_unknowns(dataset, dataset$scina_labels)
 	dataset$scina_but_better_labels <- better_labels
 
-	result <- list(
-		data=dataset,
-		# scina_res=result, not here yet
-		markers=markers_final
-	)
-	dataset$scina_labels <- factor(dataset$scina_labels,
-		levels=c(setdiff(levels(dataset$scina_labels), "OurMarkers"), "OurMarkers"))
-	dataset$scina_but_better_labels <- factor(dataset$scina_but_better_labels,
-		levels=c(setdiff(levels(dataset$scina_but_better_labels), "OurMarkers"), "OurMarkers"))
-
-	#result <- scina_process(merged_mat, output_dir)
+	# This theoretically brings the OurMarkers to the top
+	# dataset$scina_labels <- factor(dataset$scina_labels,
+		#levels=c(setdiff(levels(dataset$scina_labels), "OurMarkers"), "OurMarkers"))
+	# dataset$scina_but_better_labels <- factor(dataset$scina_but_better_labels,
+		#levels=c(setdiff(levels(dataset$scina_but_better_labels), "OurMarkers"), "OurMarkers"))
 	
-	# NOTE(wv): too slow to run for debug purposes
-	# gen_hp(result, hp_path)
-	#gen_bp(result, bp_path)
-
-	gen_seurat_dp(result, seurat_dp_path)
-	gen_seurat_fp(result, seurat_fp_path)
-
-	gen_scina_dp(result, scina_dp_path)
-	gen_scina_bdp(result, scina_bdp_path)
-	gen_scina_mp(result, scina_mp_path)
+	gen_plots(dataset, output_dir)
 }
 
 ################################################################################
