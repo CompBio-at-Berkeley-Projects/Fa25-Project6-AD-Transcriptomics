@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AD Transcriptomics - Formatted Tables</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap');
+
+        body {
+            font-family: 'Roboto', Arial, sans-serif;
+            background-color: #f5f5f5;
+            padding: 40px;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            padding: 40px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            border-radius: 8px;
+        }
+
+        h1 {
+            color: #1a237e;
+            text-align: center;
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 10px;
+            border-bottom: 3px solid #1a237e;
+            padding-bottom: 15px;
+        }
+
+        h2 {
+            color: #283593;
+            font-size: 22px;
+            font-weight: 600;
+            margin-top: 40px;
+            margin-bottom: 20px;
+            border-left: 5px solid #3f51b5;
+            padding-left: 15px;
+        }
+
+        h3 {
+            color: #3949ab;
+            font-size: 18px;
+            font-weight: 600;
+            margin-top: 30px;
+            margin-bottom: 15px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 25px 0;
+            font-size: 14px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        thead {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        thead th {
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 15px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        tbody tr {
+            border-bottom: 1px solid #e0e0e0;
+            transition: background-color 0.3s;
+        }
+
+        tbody tr:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+
+        tbody tr:hover {
+            background-color: #e3f2fd;
+        }
+
+        td {
+            padding: 12px 15px;
+            vertical-align: top;
+        }
+
+        .gene-name {
+            font-weight: 600;
+            color: #1565c0;
+            font-size: 15px;
+        }
+
+        .highlight-ad {
+            background-color: #ffebee;
+            font-weight: 500;
+        }
+
+        .highlight-control {
+            background-color: #e8f5e9;
+            font-weight: 500;
+        }
+
+        .scale-value {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 12px;
+            background-color: #e1f5fe;
+            color: #01579b;
+            font-weight: 600;
+            font-size: 13px;
+        }
+
+        .umap-coord {
+            font-family: 'Courier New', monospace;
+            background-color: #f3e5f5;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 12px;
+            color: #4a148c;
+        }
+
+        .cell-type {
+            display: inline-block;
+            padding: 4px 10px;
+            margin: 2px;
+            border-radius: 15px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .astrocyte {
+            background-color: #ffccbc;
+            color: #bf360c;
+        }
+
+        .microglia {
+            background-color: #b2dfdb;
+            color: #004d40;
+        }
+
+        .neuron {
+            background-color: #c5cae9;
+            color: #1a237e;
+        }
+
+        .oligodendrocyte {
+            background-color: #bbdefb;
+            color: #01579b;
+        }
+
+        .endothelial {
+            background-color: #ffe0b2;
+            color: #e65100;
+        }
+
+        .opc {
+            background-color: #e1bee7;
+            color: #4a148c;
+        }
+
+        .key-finding {
+            background-color: #fff3e0;
+            border-left: 4px solid #ff6f00;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 4px;
+        }
+
+        .key-finding strong {
+            color: #e65100;
+            font-size: 15px;
+        }
+
+        .section-box {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+
+        .methodology {
+            background-color: #e8eaf6;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+        }
+
+        .methodology h3 {
+            color: #283593;
+            margin-top: 0;
+        }
+
+        .methodology p {
+            margin: 8px 0;
+            font-size: 14px;
+        }
+
+        .methodology strong {
+            color: #1a237e;
+        }
+
+        ul {
+            margin: 10px 0;
+            padding-left: 25px;
+        }
+
+        li {
+            margin: 8px 0;
+            font-size: 14px;
+        }
+
+        .comparison-symbol {
+            font-size: 18px;
+            font-weight: bold;
+            color: #d32f2f;
+        }
+
+        @media print {
+            body {
+                background-color: white;
+            }
+            .container {
+                box-shadow: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Cell-Type-Specific Transcriptional Profiling of High-Confidence GWAS Risk Genes in Human Alzheimer's Disease</h1>
+
+        <div class="methodology">
+            <h3>Methodology</h3>
+            <p><strong>Dataset:</strong> GSE157827 (Lau et al. 2020) | <strong>Samples:</strong> 12 AD, 9 age-matched controls (ages 74-94)</p>
+            <p><strong>Platform:</strong> 10x Genomics snRNA-seq, prefrontal cortex | <strong>Analysis:</strong> Seurat v5 pipeline with SCINA cell-type annotation</p>
+            <p><strong>Cell Types:</strong> <span class="cell-type oligodendrocyte">Oligodendrocytes</span> <span class="cell-type neuron">Excitatory Neurons</span> <span class="cell-type neuron">Inhibitory Neurons</span> <span class="cell-type astrocyte">Astrocytes</span> <span class="cell-type microglia">Microglia</span> <span class="cell-type opc">OPCs</span> <span class="cell-type endothelial">Endothelial</span> <span class="cell-type endothelial">Pericytes</span></p>
+            <p><strong>Target Genes:</strong> APOE, APP, GRN, ACE, APH1B</p>
+        </div>
+
+        <h2>Table 1: Gene Expression Summary (AD vs Control)</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Gene</th>
+                    <th>Primary Cell Types</th>
+                    <th>AD Expression Pattern</th>
+                    <th>Control Expression Pattern</th>
+                    <th>Scale (AD/Control)</th>
+                    <th>Key UMAP Coordinates</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td class="gene-name">APOE</td>
+                    <td><span class="cell-type astrocyte">Astrocytes</span> <span class="cell-type microglia">Microglia</span></td>
+                    <td class="highlight-ad">Focal concentration in upper-central astrocytes and mid-central microglia; spatially restricted</td>
+                    <td class="highlight-control">Massive expression in bottom astrocyte cluster; widespread moderate expression across cell types</td>
+                    <td><span class="scale-value">5 / 5</span></td>
+                    <td>AD: <span class="umap-coord">(0,12)</span> <span class="umap-coord">(0,7)</span><br>NC: <span class="umap-coord">(0,-10)</span></td>
+                </tr>
+                <tr>
+                    <td class="gene-name">APP</td>
+                    <td><span class="cell-type neuron">Neurons</span> <span class="cell-type oligodendrocyte">Oligodendrocytes</span></td>
+                    <td class="highlight-ad">Near-universal expression; intense in oligodendrocytes and neurons; minimal zero-expression cells</td>
+                    <td class="highlight-control">Ubiquitous saturated expression; uniform high-intensity across all cell types</td>
+                    <td><span class="scale-value">4 / 5</span></td>
+                    <td>AD/NC: <span class="umap-coord">(-10 to -5, -10 to 5)</span> (oligos)<br><span class="umap-coord">entire UMAP</span></td>
+                </tr>
+                <tr>
+                    <td class="gene-name">GRN</td>
+                    <td><span class="cell-type microglia">Microglia</span> <span class="cell-type astrocyte">Astrocytes</span></td>
+                    <td class="highlight-ad">Sparse; concentrated in mid-central microglial cluster; scattered in neurons/astrocytes; oligodendrocytes mostly negative</td>
+                    <td class="highlight-control">Sparse; clear expression in bottom astrocyte clusters; distinct GRN-high cluster bottom-left</td>
+                    <td><span class="scale-value">3 / 3</span></td>
+                    <td>AD: <span class="umap-coord">(0,7)</span> (microglia)<br>NC: <span class="umap-coord">(0,-10)</span> (astro), <span class="umap-coord">(-7,-8)</span></td>
+                </tr>
+                <tr>
+                    <td class="gene-name">ACE</td>
+                    <td><span class="cell-type endothelial">Endothelial</span> (absent)</td>
+                    <td class="highlight-ad">Minimal expression approaching detection limit; tiny scattered dots; no cell-type enrichment; nearly entire UMAP gray</td>
+                    <td class="highlight-control">Similarly sparse; light purple dots scattered randomly; no enrichment in vascular locations</td>
+                    <td><span class="scale-value">2 / 3</span></td>
+                    <td>Random distribution<br>No clustering</td>
+                </tr>
+                <tr>
+                    <td class="gene-name">APH1B</td>
+                    <td>All cell types (ubiquitous)</td>
+                    <td class="highlight-ad">Widespread moderate; light-medium purple dots evenly distributed; present in all major clusters; punctate pattern</td>
+                    <td class="highlight-control">Widespread moderate; similar distribution; slightly denser in upper OPC region</td>
+                    <td><span class="scale-value">3 / 3</span></td>
+                    <td>AD/NC: <span class="umap-coord">entire UMAP</span><br>NC OPC: <span class="umap-coord">(7,12)</span></td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h2>Table 2: Quantitative Expression Characteristics</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Gene</th>
+                    <th>Expression Intensity (AD)</th>
+                    <th>Expression Intensity (Control)</th>
+                    <th>Spatial Distribution Pattern</th>
+                    <th>AD vs Control Difference</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td class="gene-name">APOE</td>
+                    <td>Dense purple foci, scale max <span class="scale-value">5</span></td>
+                    <td>Saturated purple cluster, scale max <span class="scale-value">5</span></td>
+                    <td>Focal discrete clusters (AD) vs. broad astrocytic (NC)</td>
+                    <td><strong style="color: #d32f2f;">↓ Reduced total astrocytic expression in AD</strong></td>
+                </tr>
+                <tr>
+                    <td class="gene-name">APP</td>
+                    <td>Near-uniform purple, scale max <span class="scale-value">4</span></td>
+                    <td>Saturated uniform purple, scale max <span class="scale-value">5</span></td>
+                    <td>Ubiquitous high-intensity expression throughout UMAP</td>
+                    <td><strong style="color: #388e3c;">= Equal/higher in controls</strong></td>
+                </tr>
+                <tr>
+                    <td class="gene-name">GRN</td>
+                    <td>Small purple dots, scale max <span class="scale-value">3</span></td>
+                    <td>Small purple dots, scale max <span class="scale-value">3</span></td>
+                    <td>Sparse microglial (AD) vs. sparse astrocytic (NC)</td>
+                    <td><strong style="color: #f57c00;">⟷ Spatial redistribution</strong></td>
+                </tr>
+                <tr>
+                    <td class="gene-name">ACE</td>
+                    <td>Tiny scattered dots, scale max <span class="scale-value">2</span></td>
+                    <td>Light scattered dots, scale max <span class="scale-value">3</span></td>
+                    <td>Random diffuse distribution, no cell-type clustering</td>
+                    <td><strong style="color: #757575;">~ Technical limitation (vascular under-sampling)</strong></td>
+                </tr>
+                <tr>
+                    <td class="gene-name">APH1B</td>
+                    <td>Light-medium purple dots, scale max <span class="scale-value">3</span></td>
+                    <td>Light-medium purple dots, scale max <span class="scale-value">3</span></td>
+                    <td>Punctate widespread distribution across all cell types</td>
+                    <td><strong style="color: #388e3c;">= Identical patterns</strong></td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h2>Table 3: Cell-Type-Specific Expression Localization</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Cell Type</th>
+                    <th>UMAP Location</th>
+                    <th>APOE</th>
+                    <th>APP</th>
+                    <th>GRN</th>
+                    <th>ACE</th>
+                    <th>APH1B</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><span class="cell-type oligodendrocyte">Oligodendrocytes</span></td>
+                    <td><span class="umap-coord">(-10 to -5, -10 to 5)</span></td>
+                    <td>Minimal</td>
+                    <td><strong>Very High</strong></td>
+                    <td>Rare</td>
+                    <td>Near-zero</td>
+                    <td>Moderate punctate</td>
+                </tr>
+                <tr>
+                    <td><span class="cell-type neuron">Excitatory Neurons</span></td>
+                    <td><span class="umap-coord">(mid-left, green)</span></td>
+                    <td>Minimal</td>
+                    <td><strong>Very High</strong></td>
+                    <td>Occasional</td>
+                    <td>Near-zero</td>
+                    <td>Moderate</td>
+                </tr>
+                <tr>
+                    <td><span class="cell-type neuron">Inhibitory Neurons</span></td>
+                    <td><span class="umap-coord">(scattered, green)</span></td>
+                    <td>Minimal</td>
+                    <td><strong>Very High</strong></td>
+                    <td>Occasional</td>
+                    <td>Near-zero</td>
+                    <td>Moderate</td>
+                </tr>
+                <tr class="highlight-ad">
+                    <td><span class="cell-type astrocyte">Astrocytes (AD)</span></td>
+                    <td><span class="umap-coord">(0, 12)</span> upper</td>
+                    <td><strong>High focal</strong></td>
+                    <td>Moderate-High</td>
+                    <td>Scattered</td>
+                    <td>Near-zero</td>
+                    <td>Scattered</td>
+                </tr>
+                <tr class="highlight-control">
+                    <td><span class="cell-type astrocyte">Astrocytes (NC)</span></td>
+                    <td><span class="umap-coord">(0, -10)</span> bottom</td>
+                    <td><strong>Very High widespread</strong></td>
+                    <td>Moderate-High</td>
+                    <td><strong>Clear expression</strong></td>
+                    <td>Near-zero</td>
+                    <td>Scattered</td>
+                </tr>
+                <tr>
+                    <td><span class="cell-type microglia">Microglia</span></td>
+                    <td><span class="umap-coord">(0, 7)</span> mid-central</td>
+                    <td><strong>High (AD)</strong></td>
+                    <td>Moderate</td>
+                    <td><strong>Enriched</strong></td>
+                    <td>Near-zero</td>
+                    <td>Faint</td>
+                </tr>
+                <tr>
+                    <td><span class="cell-type opc">OPCs</span></td>
+                    <td><span class="umap-coord">(7, 12)</span> upper-right</td>
+                    <td>Low</td>
+                    <td>Moderate</td>
+                    <td>Rare</td>
+                    <td>Near-zero</td>
+                    <td>Moderate (denser in NC)</td>
+                </tr>
+                <tr>
+                    <td><span class="cell-type endothelial">Endothelial</span></td>
+                    <td><span class="umap-coord">small scattered</span></td>
+                    <td>Low</td>
+                    <td>Moderate</td>
+                    <td>Rare</td>
+                    <td><strong>Expected (absent)</strong></td>
+                    <td>Faint</td>
+                </tr>
+                <tr>
+                    <td><span class="cell-type endothelial">Pericytes</span></td>
+                    <td><span class="umap-coord">very small</span></td>
+                    <td>Low</td>
+                    <td>Moderate</td>
+                    <td>Rare</td>
+                    <td><strong>Expected (absent)</strong></td>
+                    <td>Faint</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h2>Table 4: Key Pathological Findings</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Gene</th>
+                    <th>Primary Finding</th>
+                    <th>Mechanistic Implication</th>
+                    <th>Therapeutic Direction</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td class="gene-name">APOE</td>
+                    <td><strong style="color: #d32f2f;">PARADOXICAL REDUCTION</strong><br>Control shows more robust and widespread expression than AD</td>
+                    <td>Loss of astrocytic APOE → impaired cholesterol delivery, reduced Aβ clearance, loss of APOE-lipid particle formation. Focal AD expression represents stressed glia attempting compensation.</td>
+                    <td><strong>Restore physiological astrocytic APOE</strong> and enhance lipidation state rather than suppression</td>
+                </tr>
+                <tr>
+                    <td class="gene-name">APP</td>
+                    <td><strong style="color: #388e3c;">NO OVERPRODUCTION</strong><br>Equal/higher expression in controls (scale 5) vs. AD (scale 4)</td>
+                    <td>Pathology arises from dysregulated APP <em>processing</em> (β/γ-secretase cleavage toward Aβ42) not transcript overexpression. Neuronal/oligodendrocyte dominance confirms neurons as primary Aβ source.</td>
+                    <td><strong>Modulate APP processing</strong> (promote α-secretase, shift γ-secretase specificity) not global reduction</td>
+                </tr>
+                <tr>
+                    <td class="gene-name">GRN</td>
+                    <td><strong style="color: #f57c00;">SPATIAL REDISTRIBUTION</strong><br>Microglial concentration (AD) vs. astrocytic expression (NC)</td>
+                    <td>Breakdown of glial cooperation. GRN deficiency → hyperactive inflammation, impaired lysosomal autophagy, enhanced complement-mediated synapse loss. AD microglia represent DAM attempting homeostasis.</td>
+                    <td><strong>Boost microglial progranulin</strong> or prevent proteolysis to granulins</td>
+                </tr>
+                <tr>
+                    <td class="gene-name">ACE</td>
+                    <td><strong style="color: #757575;">TECHNICAL LIMITATION</strong><br>Virtual absence reflects insufficient vascular cell capture</td>
+                    <td>Standard snRNA-seq under-samples endothelial/pericyte populations. ACE dysfunction impairs BBB Aβ efflux and promotes angiotensin II-mediated vasoconstriction/hypoperfusion.</td>
+                    <td><strong>Specialized vascular enrichment required</strong> for proper ACE assessment; spatial transcriptomics preserving vascular architecture</td>
+                </tr>
+                <tr>
+                    <td class="gene-name">APH1B</td>
+                    <td><strong style="color: #388e3c;">RATE-LIMITING ENZYME</strong><br>Sparse APH1B vs. ubiquitous APP; identical AD/control patterns</td>
+                    <td>γ-secretase activity, not APP availability, limits Aβ generation. Pathology from altered enzyme <em>specificity</em> toward Aβ42 (aggregation-prone) rather than expression changes. Ubiquitous expression explains inhibitor failures (essential Notch disruption).</td>
+                    <td><strong>γ-secretase modulators</strong> shifting cleavage specificity (Aβ42→Aβ40) without complete blockade</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="section-box">
+            <h2 style="margin-top: 0;">Novel Insights</h2>
+            <div class="key-finding">
+                <strong>1. APOE Paradox:</strong> First demonstration of reduced total astrocytic APOE in AD versus controls, challenging inflammatory upregulation paradigm. Control brains maintain robust baseline APOE for homeostatic functions.
+            </div>
+            <div class="key-finding">
+                <strong>2. APP Processing Primacy:</strong> Quantitative proof that APP transcript levels do not correlate with pathology (control scale 5 ≥ AD scale 4). Refocuses attention on processing enzymes.
+            </div>
+            <div class="key-finding">
+                <strong>3. GRN Glial Network Failure:</strong> Spatial shift from astrocytic (control) to microglial (AD) expression suggests breakdown of glial cooperation and impaired lysosomal function.
+            </div>
+            <div class="key-finding">
+                <strong>4. Rate-Limiting γ-Secretase:</strong> Sparse APH1B (scale 3) vs. ubiquitous APP (scale 4-5) identifies processing bottleneck in Aβ generation cascade.
+            </div>
+            <div class="key-finding">
+                <strong>5. Refined Amyloid Hypothesis:</strong> AD results from imbalance in Aβ production/clearance/aggregation, critically dependent on astrocytic APOE function (reduced in AD) and microglial phagocytic capacity, not simple overproduction.
+            </div>
+        </div>
+
+        <h2>Table 5: Therapeutic Paradigm Shifts</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Traditional View</th>
+                    <th>Data-Driven Insight</th>
+                    <th>New Therapeutic Strategy</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>APOE upregulated in AD inflammation</td>
+                    <td class="highlight-control">APOE <strong>reduced</strong> in AD astrocytes vs. controls</td>
+                    <td>Restore physiological astrocytic APOE expression and enhance lipidation</td>
+                </tr>
+                <tr>
+                    <td>APP overproduction drives Aβ accumulation</td>
+                    <td class="highlight-control">APP expression <strong>equal/higher</strong> in controls (5 vs. 4)</td>
+                    <td>Target APP processing enzymes (α-secretase promotion, γ-secretase modulation)</td>
+                </tr>
+                <tr>
+                    <td>Microglial activation is uniformly pathogenic</td>
+                    <td class="highlight-ad">GRN redistribution suggests <strong>homeostatic subset</strong> attempting compensation</td>
+                    <td>Selective microglial GRN enhancement to restore surveillance function</td>
+                </tr>
+                <tr>
+                    <td>γ-secretase inhibition reduces Aβ</td>
+                    <td>Ubiquitous APH1B (scale 3) across essential cell types explains <strong>clinical trial failures</strong></td>
+                    <td>γ-secretase modulators shifting Aβ42/Aβ40 ratio without complete blockade</td>
+                </tr>
+                <tr>
+                    <td>Parenchymal cell dysfunction drives pathology</td>
+                    <td>ACE absence highlights <strong>cerebrovascular exclusion</strong> in standard datasets</td>
+                    <td>Multi-modal approaches incorporating vascular enrichment and spatial transcriptomics</td>
+                </tr>
+            </tbody>
+        </table>
+
+    </div>
+</body>
+</html>
