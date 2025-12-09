@@ -1,0 +1,4 @@
+*.qsave
+*.pdf
+*.log
+output/

@@ -1,443 +1,297 @@
-################################################################################
+###############################################################################
+# Robust end-to-end pipeline for GSE157827 (final patched script)
+# - Validates 10x folders
+# - Extracts or downloads the full tarball if needed
+# - Re-downloads individual corrupted sample files via curl
+# - Loads only valid samples into Seurat, merges, preprocesses, runs PCA/UMAP/clustering
+# - Saves merged Seurat object and QC plots
 #
-# AUTOMATED DOWNLOAD SCRIPT FOR GSE157827 (Lau et al. 2020)
-#
-# This script downloads and prepares the complete GSE157827 dataset
-# (169,496 nuclei from human AD prefrontal cortex) for SCINA analysis.
-#
-# ADVANTAGES over ssREAD:
-# - Complete count matrices (not redacted)
-# - Direct download (no manual clicking)
-# - Standard 10x format (easy to load)
-# - All target genes present (APOE, APP, GRN, ACE, APH1B)
-#
-# USAGE:
-#   source("seurat_exploration/SCINA_team/download_GSE157827.R")
-#
-# TIME: ~15-30 minutes (depending on internet speed)
-#
-################################################################################
+# Usage: source("download_GSE157827_final.R")
+###############################################################################
 
-cat("============================================================\n")
-cat("GSE157827 Download and Preparation Script\n")
-cat("Lau et al. 2020 - AD Prefrontal Cortex snRNA-seq\n")
-cat("============================================================\n\n")
-
-# Set working directory
-setwd("~/Documents/GitHub/Fa25-Project6-AD-Transcriptomics")
-
-# ==============================================================================
-# SECTION 1: SETUP
-# ==============================================================================
-
-cat("SECTION 1: Setup and Dependencies\n")
-cat("---------------------------------\n\n")
-
-# Create directories
-cat("Creating directories...\n")
-dir.create("data/GSE157827", showWarnings = FALSE, recursive = TRUE)
-dir.create("data/GSE157827_processed", showWarnings = FALSE, recursive = TRUE)
-
-# Install/load required packages
-required_packages <- c("Seurat", "dplyr", "ggplot2")
-
-for (pkg in required_packages) {
-  if (!requireNamespace(pkg, quietly = TRUE)) {
-    cat(sprintf("Installing %s...\n", pkg))
-    install.packages(pkg)
-  }
-}
+## ------------ Configuration ------------
+setwd("~/Documents/GitHub/Fa25-Project6-AD-Transcriptomics")  # change if needed
 
 library(Seurat)
+library(Matrix)
 library(dplyr)
 library(ggplot2)
 
-cat("Setup complete!\n\n")
+# Paths
+raw_parent <- "data/GSE157827"
+extract_dir <- file.path(raw_parent, "GSE157827_RAW")
+tar_file <- file.path(raw_parent, "GSE157827_RAW.tar")
+out_rds <- file.path(raw_parent, "GSE157827_processed", "GSE157827_merged_seurat.rds")
+fig_dir <- file.path(raw_parent, "figures_GSE157827_QC")
+dir.create(dirname(out_rds), recursive = TRUE, showWarnings = FALSE)
+dir.create(fig_dir, recursive = TRUE, showWarnings = FALSE)
 
-# ==============================================================================
-# SECTION 2: DOWNLOAD DATA
-# ==============================================================================
+# Expected sample IDs (based on this dataset)
+expected_samples <- c("AD1","AD2","AD4","AD5","AD6","AD8","AD9","AD10","AD13","AD19","AD20")
 
-cat("SECTION 2: Downloading GSE157827 from GEO\n")
-cat("------------------------------------------\n\n")
+message("Starting pipeline...")
 
-# File paths
-tar_file <- "data/GSE157827/GSE157827_RAW.tar"
-extract_dir <- "data/GSE157827/GSE157827_RAW"
+## ------------ Helper functions ------------
+validate_sample <- function(sample_dir) {
+  bf <- file.path(sample_dir, "barcodes.tsv.gz")
+  ff <- file.path(sample_dir, "features.tsv.gz")
+  mf <- file.path(sample_dir, "matrix.mtx.gz")
+  exists_bar <- file.exists(bf)
+  exists_feat <- file.exists(ff)
+  exists_mtx <- file.exists(mf)
+  mtx_read <- FALSE
+  dims <- ""
+  emsg <- ""
+  if (exists_mtx) {
+    tryCatch({
+      mm <- Matrix::readMM(mf)
+      mtx_read <- TRUE
+      dims <- paste0(nrow(mm), " x ", ncol(mm))
+    }, error = function(e) {
+      mtx_read <<- FALSE
+      emsg <<- e$message
+    })
+  }
+  data.frame(
+    sample = basename(sample_dir),
+    barcodes_ok = exists_bar,
+    features_ok = exists_feat,
+    matrix_ok = exists_mtx,
+    mtx_readable = mtx_read,
+    mtx_dim = dims,
+    error_message = emsg,
+    stringsAsFactors = FALSE
+  )
+}
 
-# Check if already downloaded
-if (file.exists(tar_file)) {
-  cat("TAR file already exists. Skipping download.\n")
-  cat(sprintf("File size: %.2f GB\n", file.size(tar_file) / 1e9))
-} else {
-  cat("Downloading GSE157827_RAW.tar (1.2 GB)...\n")
-  cat("This may take 10-20 minutes depending on your connection.\n\n")
+download_sample_files_via_curl <- function(gsm_id, sample_name, dest_dir) {
+  # gsm_id like "GSM4775598"
+  # sample_name like "AD20"
+  dir.create(dest_dir, recursive = TRUE, showWarnings = FALSE)
+  base_path <- paste0("https://ftp.ncbi.nlm.nih.gov/geo/samples/",
+                      substr(gsm_id, 1, 7), "nnn/", gsm_id, "/suppl/")
+  files <- c(
+    barcodes = paste0(gsm_id, "_", sample_name, "_barcodes.tsv.gz"),
+    features = paste0(gsm_id, "_", sample_name, "_features.tsv.gz"),
+    matrix   = paste0(gsm_id, "_", sample_name, "_matrix.mtx.gz")
+  )
+  for (k in names(files)) {
+    url <- paste0(base_path, files[[k]])
+    dest <- file.path(dest_dir, ifelse(k=="matrix","matrix.mtx.gz", paste0(k, ".tsv.gz")))
+    # use curl with user-agent and follow redirects
+    cmd <- sprintf("curl -L -A 'Mozilla/5.0' '%s' -o '%s' --retry 3 --retry-delay 5", url, dest)
+    message("Downloading ", sample_name, " ", k, " from: ", url)
+    rc <- system(cmd)
+    if (rc != 0 || !file.exists(dest)) {
+      message("Warning: download failed for ", sample_name, " ", k, " (rc=", rc, ")")
+    } else {
+      message("Downloaded: ", dest)
+    }
+  }
+}
 
-  # FTP download URL
-  ftp_url <- "ftp://ftp.ncbi.nlm.nih.gov/geo/series/GSE157nnn/GSE157827/suppl/GSE157827_RAW.tar"
+ensure_tar_extracted <- function() {
+  # If extract_dir has expected sample folders, done.
+  if (dir.exists(extract_dir) && length(list.dirs(extract_dir, recursive = FALSE))>0) {
+    return(TRUE)
+  }
+  # If tar file exists, extract it using system tar (more reliable)
+  if (file.exists(tar_file)) {
+    message("Extracting existing tar file: ", tar_file)
+    system(sprintf("tar -xvf '%s' -C '%s'", tar_file, raw_parent))
+    return(TRUE)
+  }
+  # Otherwise, attempt to download tar via HTTPS using curl (robust)
+  message("Tar file not found. Attempting to download full tar (1.2 GB) via curl...")
+  url_tar <- "https://ftp.ncbi.nlm.nih.gov/geo/series/GSE157nnn/GSE157827/suppl/GSE157827_RAW.tar"
+  dir.create(raw_parent, recursive = TRUE, showWarnings = FALSE)
+  cmd <- sprintf("curl -L -A 'Mozilla/5.0' '%s' -o '%s' --retry 3 --retry-delay 10", url_tar, tar_file)
+  rc <- system(cmd)
+  if (rc != 0) {
+    message("Warning: tar download failed (rc=", rc, "). Please download manually from GEO and place at: ", tar_file)
+    return(FALSE)
+  }
+  message("Download complete; extracting tar...")
+  system(sprintf("tar -xvf '%s' -C '%s'", tar_file, raw_parent))
+  return(TRUE)
+}
 
-  # Try download with error handling
+## ------------ Ensure extracted files exist (extract or download tar if necessary) ------------
+if (!dir.exists(extract_dir) || length(list.dirs(extract_dir, recursive = FALSE)) == 0) {
+  ok <- ensure_tar_extracted()
+  if (!ok) {
+    message("Proceeding with whatever folders are present under ", extract_dir)
+  }
+}
+
+message("Listing sample directories under: ", extract_dir)
+present_dirs <- list.dirs(extract_dir, recursive = FALSE, full.names = FALSE)
+message("Found: ", paste(present_dirs, collapse = ", "))
+
+# Use only the intersection of expected_samples and present_dirs; but allow any folder that looks valid
+candidate_dirs <- list.dirs(extract_dir, recursive = FALSE, full.names = TRUE)
+# Filter to folders that contain barcodes/features/matrix
+valid_folder_mask <- sapply(candidate_dirs, function(d) {
+  all(c("barcodes.tsv.gz","features.tsv.gz","matrix.mtx.gz") %in% list.files(d))
+})
+candidate_dirs <- candidate_dirs[valid_folder_mask]
+
+message("Candidate 10x folders: ", paste(basename(candidate_dirs), collapse = ", "))
+
+if (length(candidate_dirs) == 0) {
+  message("No complete 10x folders found yet under ", extract_dir, ". Attempting to re-extract or re-download tar.")
+  ok <- ensure_tar_extracted()
+  candidate_dirs <- list.dirs(extract_dir, recursive = FALSE, full.names = TRUE)
+  valid_folder_mask <- sapply(candidate_dirs, function(d) {
+    all(c("barcodes.tsv.gz","features.tsv.gz","matrix.mtx.gz") %in% list.files(d))
+  })
+  candidate_dirs <- candidate_dirs[valid_folder_mask]
+  if (length(candidate_dirs) == 0) {
+    stop("No valid sample folders found after extraction. Please ensure raw 10x folders are present under: ", extract_dir)
+  }
+}
+
+## ------------ Validate samples (fast check and readMM check) ------------
+qc_list <- lapply(candidate_dirs, validate_sample)
+qc_df <- bind_rows(qc_list)
+print(qc_df)
+
+good_samples <- qc_df %>% filter(mtx_readable==TRUE) %>% pull(sample)
+bad_samples <- qc_df %>% filter(mtx_readable==FALSE) %>% pull(sample)
+
+message("Good samples: ", paste(good_samples, collapse = ", "))
+message("Bad/Corrupt samples: ", paste(bad_samples, collapse = ", "))
+
+## ------------ If any bad samples found, attempt targeted re-download (only for AD20 known GSM) ------------
+# Map sample->GSM id if known (only AD20 here; expand if you have others)
+sample_to_gsm <- list(AD20 = "GSM4775598")  # add more as needed
+
+for (s in bad_samples) {
+  if (s %in% names(sample_to_gsm)) {
+    gsm <- sample_to_gsm[[s]]
+    message("Attempting to re-download files for ", s, " (", gsm, ")")
+    download_sample_files_via_curl(gsm, s, file.path(extract_dir, s))
+    # Re-validate
+    new_qc <- validate_sample(file.path(extract_dir, s))
+    print(new_qc)
+    if (isTRUE(new_qc$mtx_readable)) {
+      message("Re-download fixed sample: ", s)
+      # update qc_df and lists
+      qc_df <- qc_df %>% mutate(
+        mtx_readable = ifelse(sample==s, TRUE, mtx_readable),
+        mtx_dim = ifelse(sample==s, new_qc$mtx_dim, mtx_dim),
+        error_message = ifelse(sample==s, new_qc$error_message, error_message)
+      )
+      good_samples <- unique(c(good_samples, s))
+      bad_samples <- setdiff(bad_samples, s)
+    } else {
+      message("Re-download DID NOT fix ", s, " — you will need to manually download files from GEO.")
+    }
+  } else {
+    message("No automatic GSM mapping for ", s, ". Please download sample files manually from GEO.")
+  }
+}
+
+# Final lists after possible re-downloads
+message("Final good samples: ", paste(good_samples, collapse = ", "))
+message("Final bad samples (will be skipped): ", paste(bad_samples, collapse = ", "))
+
+if (length(good_samples) == 0) stop("No readable samples available. Fix data files and re-run.")
+
+## ------------ Load good samples into Seurat ------------
+seurat_list <- list()
+for (s in good_samples) {
+  sample_dir <- file.path(extract_dir, s)
+  message("Loading sample: ", s)
+  # Guarded Read10X
   tryCatch({
-    download.file(
-      url = ftp_url,
-      destfile = tar_file,
-      method = "auto",  # auto-detect best method
-      mode = "wb",       # binary mode
-      quiet = FALSE
-    )
-    cat("\nDownload complete!\n")
+    counts <- Read10X(sample_dir)
+    obj <- CreateSeuratObject(counts = counts, project = s, min.cells = 3, min.features = 200)
+    obj$sample <- s
+    obj$condition <- ifelse(grepl("^AD", s), "AD", "Control")
+    seurat_list[[s]] <- obj
+    message("Loaded ", s, " (cells=", ncol(obj), ", genes=", nrow(obj), ")")
   }, error = function(e) {
-    cat("\n\nERROR: Automatic download failed.\n")
-    cat("Error message:", e$message, "\n\n")
-    cat("MANUAL DOWNLOAD INSTRUCTIONS:\n")
-    cat("1. Visit: https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE157827\n")
-    cat("2. Click 'GSE157827_RAW.tar (1.2 Gb)' under Supplementary file\n")
-    cat("3. Save to:", tar_file, "\n")
-    cat("4. Re-run this script\n\n")
-    stop("Download failed - follow manual instructions above")
+    message("ERROR loading sample ", s, ": ", e$message)
   })
 }
 
-# ==============================================================================
-# SECTION 3: EXTRACT TAR FILE
-# ==============================================================================
+if (length(seurat_list) == 0) stop("No Seurat objects created. Abort.")
 
-cat("\n")
-cat("SECTION 3: Extracting TAR file\n")
-cat("-------------------------------\n\n")
-
-if (dir.exists(extract_dir) && length(list.files(extract_dir)) > 0) {
-  cat("Files already extracted. Skipping extraction.\n")
+## ------------ Merge safely ------------
+message("Merging ", length(seurat_list), " Seurat objects...")
+if (length(seurat_list) == 1) {
+  merged <- seurat_list[[1]]
 } else {
-  cat("Extracting TAR file...\n")
-  cat("This will create ~63 files (21 samples x 3 files each)\n\n")
-
-  # Extract TAR
-  untar(tarfile = tar_file, exdir = extract_dir)
-
-  # Check extraction
-  extracted_files <- list.files(extract_dir)
-  cat(sprintf("Extracted %d files\n", length(extracted_files)))
-
-  if (length(extracted_files) == 0) {
-    stop("ERROR: Extraction failed. Check if TAR file is complete.")
-  }
+  merged <- Reduce(function(a,b) merge(a, y=b), seurat_list)
 }
+message("Merged object: cells=", ncol(merged), " genes=", nrow(merged))
 
-cat("\nExtraction complete!\n\n")
+## ------------ QC metrics and filtering ------------
+merged[["percent.mt"]] <- PercentageFeatureSet(merged, pattern = "^MT-")
 
-# ==============================================================================
-# SECTION 4: ORGANIZE FILES BY SAMPLE
-# ==============================================================================
-
-cat("SECTION 4: Organizing files by sample\n")
-cat("--------------------------------------\n\n")
-
-# List all files
-all_files <- list.files(extract_dir, full.names = TRUE)
-
-# Parse sample names
-# File format: GSM4775579_AD1_barcodes.tsv.gz
-sample_ids <- unique(sapply(strsplit(basename(all_files), "_"), function(x) x[2]))
-sample_ids <- sample_ids[sample_ids != ""]  # Remove empty strings
-
-cat(sprintf("Found %d samples:\n", length(sample_ids)))
-
-# Separate AD and Control
-ad_samples <- grep("^AD", sample_ids, value = TRUE)
-nc_samples <- grep("^NC", sample_ids, value = TRUE)
-
-cat(sprintf("  - AD samples: %d (%s)\n", length(ad_samples), paste(head(ad_samples, 3), collapse = ", ")))
-cat(sprintf("  - Control samples: %d (%s)\n", length(nc_samples), paste(head(nc_samples, 3), collapse = ", ")))
-
-# Create sample directories
-cat("\nCreating sample directories...\n")
-for (sample in sample_ids) {
-  sample_dir <- file.path(extract_dir, sample)
-  dir.create(sample_dir, showWarnings = FALSE)
-
-  # Move files for this sample
-  sample_files <- grep(paste0("_", sample, "_"), all_files, value = TRUE)
-
-  for (file in sample_files) {
-    file_type <- tail(strsplit(basename(file), "_")[[1]], 1)  # barcodes.tsv.gz, genes.tsv.gz, matrix.mtx.gz
-    new_name <- file.path(sample_dir, file_type)
-
-    if (!file.exists(new_name)) {
-      file.rename(file, new_name)
-    }
-  }
-}
-
-cat("Files organized!\n\n")
-
-# ==============================================================================
-# SECTION 5: LOAD AND MERGE ALL SAMPLES
-# ==============================================================================
-
-cat("SECTION 5: Loading data into Seurat\n")
-cat("------------------------------------\n\n")
-
-# Check if merged object already exists
-merged_rds <- "data/GSE157827_processed/GSE157827_merged_seurat.rds"
-
-if (file.exists(merged_rds)) {
-  cat("Merged Seurat object already exists. Loading...\n")
-  seurat_obj <- readRDS(merged_rds)
-  cat(sprintf("Loaded: %d cells, %d genes\n\n", ncol(seurat_obj), nrow(seurat_obj)))
-
-} else {
-  cat("Loading samples into Seurat...\n")
-  cat("This may take 5-10 minutes for all 21 samples.\n\n")
-
-  seurat_list <- list()
-
-  for (sample in sample_ids) {
-    sample_dir <- file.path(extract_dir, sample)
-
-    cat(sprintf("Loading %s...", sample))
-
-    # Check if all required files exist
-    required_files <- c("barcodes.tsv.gz", "genes.tsv.gz", "matrix.mtx.gz")
-    files_exist <- sapply(required_files, function(f) {
-      file.exists(file.path(sample_dir, f))
-    })
-
-    if (all(files_exist)) {
-      tryCatch({
-        # Read 10x data
-        data <- Read10X(data.dir = sample_dir)
-
-        # Create Seurat object
-        seurat_sample <- CreateSeuratObject(
-          counts = data,
-          project = "Lau2020",
-          min.cells = 3,
-          min.features = 200
-        )
-
-        # Add metadata
-        seurat_sample$sample <- sample
-        seurat_sample$condition <- ifelse(grepl("^AD", sample), "AD", "Control")
-
-        seurat_list[[sample]] <- seurat_sample
-
-        cat(sprintf(" %d cells\n", ncol(seurat_sample)))
-
-      }, error = function(e) {
-        cat(sprintf(" ERROR: %s\n", e$message))
-      })
-    } else {
-      cat(" SKIPPED (missing files)\n")
-    }
-  }
-
-  # Merge all samples
-  cat("\nMerging all samples...\n")
-  seurat_obj <- merge(
-    x = seurat_list[[1]],
-    y = seurat_list[-1],
-    add.cell.ids = names(seurat_list),
-    project = "GSE157827"
-  )
-
-  cat(sprintf("Merged dataset: %d cells, %d genes\n", ncol(seurat_obj), nrow(seurat_obj)))
-
-  # Add aggregate metadata
-  seurat_obj$dataset <- "GSE157827_Lau2020"
-  seurat_obj$brain_region <- "Prefrontal_Cortex"
-  seurat_obj$technology <- "10x_Genomics"
-
-  # Save merged object
-  cat("\nSaving merged Seurat object...\n")
-  saveRDS(seurat_obj, merged_rds)
-  cat(sprintf("Saved: %s\n\n", merged_rds))
-}
-
-# ==============================================================================
-# SECTION 6: VERIFY GENE PRESENCE
-# ==============================================================================
-
-cat("SECTION 6: Verifying target genes\n")
-cat("----------------------------------\n\n")
-
-genes_of_interest <- c("APOE", "APP", "GRN", "ACE", "APH1B")
-
-cat("Checking for target genes:\n")
-for (gene in genes_of_interest) {
-  present <- gene %in% rownames(seurat_obj)
-  status <- if (present) "✓ FOUND" else "✗ MISSING"
-  cat(sprintf("  %-10s %s\n", gene, status))
-}
-
-genes_present <- genes_of_interest[genes_of_interest %in% rownames(seurat_obj)]
-genes_missing <- genes_of_interest[!genes_of_interest %in% rownames(seurat_obj)]
-
-cat(sprintf("\nResult: %d/%d genes present\n", length(genes_present), length(genes_of_interest)))
-
-if (length(genes_missing) > 0) {
-  cat("\nSearching for missing genes with alternative names...\n")
-  for (gene in genes_missing) {
-    matches <- grep(gene, rownames(seurat_obj), value = TRUE, ignore.case = TRUE)
-    if (length(matches) > 0) {
-      cat(sprintf("  Possible matches for %s: %s\n", gene, paste(matches, collapse = ", ")))
-    }
-  }
-}
-
-cat("\n")
-
-# ==============================================================================
-# SECTION 7: QUICK QC SUMMARY
-# ==============================================================================
-
-cat("SECTION 7: Quality Control Summary\n")
-cat("-----------------------------------\n\n")
-
-# Calculate mitochondrial percentage
-seurat_obj[["percent.mt"]] <- PercentageFeatureSet(seurat_obj, pattern = "^MT-")
-
-# QC metrics
 qc_stats <- data.frame(
-  Metric = c("Total cells", "Total genes", "Median genes/cell",
-             "Median UMIs/cell", "Median mito %",
-             "AD samples", "Control samples"),
-  Value = c(
-    ncol(seurat_obj),
-    nrow(seurat_obj),
-    round(median(seurat_obj$nFeature_RNA)),
-    round(median(seurat_obj$nCount_RNA)),
-    round(median(seurat_obj$percent.mt), 2),
-    sum(seurat_obj$condition == "AD"),
-    sum(seurat_obj$condition == "Control")
-  )
+  Metric = c("Total cells", "Total genes", "Median genes/cell", "Median UMIs/cell", "Median mito %"),
+  Value = c(ncol(merged), nrow(merged), median(merged$nFeature_RNA), median(merged$nCount_RNA), median(merged$percent.mt))
 )
-
 print(qc_stats)
 
-# Sample breakdown
-cat("\n\nSample breakdown:\n")
-sample_counts <- table(seurat_obj$sample, seurat_obj$condition)
-print(sample_counts)
+# Filter thresholds (customize if you want)
+merged <- subset(merged, subset = nFeature_RNA > 200 & nFeature_RNA < 6000 & percent.mt < 20)
+message("After QC filter: cells=", ncol(merged), " genes=", nrow(merged))
 
-cat("\n")
+## ------------ Preprocessing ------------
+message("Normalizing...")
+merged <- NormalizeData(merged, verbose = FALSE)
 
-# ==============================================================================
-# SECTION 8: BASIC PREPROCESSING
-# ==============================================================================
+message("Finding variable features...")
+merged <- FindVariableFeatures(merged, selection.method = "vst", nfeatures = 3000, verbose = FALSE)
 
-cat("SECTION 8: Basic Preprocessing\n")
-cat("------------------------------\n\n")
+message("Scaling data...")
+merged <- ScaleData(merged, verbose = FALSE)
 
-# Check if preprocessing already done
-if (!"umap" %in% names(seurat_obj@reductions)) {
-  cat("Running basic preprocessing...\n")
-  cat("(Full preprocessing will be done in SCINA_workflow.R)\n\n")
+message("Running PCA (50 PCs)...")
+merged <- RunPCA(merged, npcs = 50, verbose = FALSE)
 
-  # Normalize
-  cat("  - Normalizing...\n")
-  seurat_obj <- NormalizeData(seurat_obj, verbose = FALSE)
+message("Running UMAP (dims 1:30)...")
+merged <- RunUMAP(merged, dims = 1:30, verbose = FALSE)
 
-  # Find variable features
-  cat("  - Finding variable features...\n")
-  seurat_obj <- FindVariableFeatures(seurat_obj, selection.method = "vst",
-                                      nfeatures = 2000, verbose = FALSE)
+message("Finding neighbors and clusters...")
+merged <- FindNeighbors(merged, dims = 1:30, verbose = FALSE)
+merged <- FindClusters(merged, resolution = 0.4, verbose = FALSE)
 
-  # Scale
-  cat("  - Scaling data...\n")
-  seurat_obj <- ScaleData(seurat_obj, verbose = FALSE)
+## ------------ Plots & Save ------------
+p1 <- DimPlot(merged, group.by = "sample") + ggtitle("GSE157827: by sample")
+p2 <- DimPlot(merged, label = TRUE) + ggtitle("GSE157827: clusters")
 
-  # PCA
-  cat("  - Running PCA...\n")
-  seurat_obj <- RunPCA(seurat_obj, npcs = 50, verbose = FALSE)
+ggsave(file.path(fig_dir, "umap_by_sample.pdf"), p1, width = 8, height = 6)
+ggsave(file.path(fig_dir, "umap_clusters.pdf"), p2, width = 8, height = 6)
 
-  # UMAP
-  cat("  - Running UMAP...\n")
-  seurat_obj <- RunUMAP(seurat_obj, dims = 1:30, verbose = FALSE)
+saveRDS(merged, out_rds)
+message("Saved merged Seurat object: ", out_rds)
+message("Saved QC plots to: ", fig_dir)
 
-  # Clustering
-  cat("  - Clustering...\n")
-  seurat_obj <- FindNeighbors(seurat_obj, dims = 1:30, verbose = FALSE)
-  seurat_obj <- FindClusters(seurat_obj, resolution = 0.5, verbose = FALSE)
+############################################################
+## 12. Save as qsave (qs format) — NEW ADDITION
+############################################################
 
-  # Save
-  saveRDS(seurat_obj, merged_rds)
-  cat("\nPreprocessing complete!\n\n")
+qs_dir <- file.path(raw_parent, "qs_processed")
+dir.create(qs_dir, recursive = TRUE, showWarnings = FALSE)
 
-} else {
-  cat("Preprocessing already done. Skipping.\n\n")
-}
+qs_file <- file.path(qs_dir, "GSE157827_merged_seurat.qs")
 
-# ==============================================================================
-# SECTION 9: GENERATE QC PLOTS
-# ==============================================================================
+message("Saving qsave (qs) file...")
+qsave(merged, qs_file, preset = "high")
+message("✔ qsave complete: ", qs_file)
 
-cat("SECTION 9: Generating QC plots\n")
-cat("-------------------------------\n\n")
+############################################################
 
-# Create figures directory
-dir.create("figures/GSE157827_QC", showWarnings = FALSE, recursive = TRUE)
+## ------------ Final summary ------------
+message("Pipeline complete.")
+message("Good samples: ", paste(good_samples, collapse = ", "))
+message("Skipped bad samples: ", paste(bad_samples, collapse = ", "))
+message("Merged cells: ", ncol(merged), ", genes: ", nrow(merged))
 
-# Plot 1: UMAP by condition
-p1 <- DimPlot(seurat_obj, group.by = "condition") +
-  ggtitle("GSE157827: AD vs Control")
-ggsave("figures/GSE157827_QC/01_umap_by_condition.pdf", p1, width = 8, height = 6)
-cat("Saved: figures/GSE157827_QC/01_umap_by_condition.pdf\n")
-
-# Plot 2: UMAP by sample
-p2 <- DimPlot(seurat_obj, group.by = "sample", label = FALSE) +
-  ggtitle("GSE157827: All 21 Samples") +
-  theme(legend.text = element_text(size = 6))
-ggsave("figures/GSE157827_QC/02_umap_by_sample.pdf", p2, width = 10, height = 8)
-cat("Saved: figures/GSE157827_QC/02_umap_by_sample.pdf\n")
-
-# Plot 3: QC violin plots
-p3 <- VlnPlot(seurat_obj,
-              features = c("nFeature_RNA", "nCount_RNA", "percent.mt"),
-              group.by = "condition",
-              ncol = 3, pt.size = 0)
-ggsave("figures/GSE157827_QC/03_qc_metrics.pdf", p3, width = 12, height = 4)
-cat("Saved: figures/GSE157827_QC/03_qc_metrics.pdf\n")
-
-# Plot 4: Target genes
-if (length(genes_present) > 0) {
-  p4 <- FeaturePlot(seurat_obj, features = genes_present,
-                    ncol = 3, cols = c("lightgrey", "red"))
-  ggsave("figures/GSE157827_QC/04_target_genes.pdf", p4,
-         width = 15, height = ceiling(length(genes_present)/3) * 5)
-  cat("Saved: figures/GSE157827_QC/04_target_genes.pdf\n")
-}
-
-cat("\n")
-
-# ==============================================================================
-# SECTION 10: FINAL SUMMARY
-# ==============================================================================
-
-cat("============================================================\n")
-cat("DOWNLOAD AND PREPARATION COMPLETE!\n")
-cat("============================================================\n\n")
-
-cat("Dataset Summary:\n")
-cat(sprintf("  - Cells: %d\n", ncol(seurat_obj)))
-cat(sprintf("  - Genes: %d\n", nrow(seurat_obj)))
-cat(sprintf("  - AD samples: %d\n", length(ad_samples)))
-cat(sprintf("  - Control samples: %d\n", length(nc_samples)))
-cat(sprintf("  - Target genes present: %d/%d\n", length(genes_present), length(genes_of_interest)))
-
-cat("\nFiles created:\n")
-cat(sprintf("  - Merged Seurat object: %s\n", merged_rds))
-cat("  - QC plots: figures/GSE157827_QC/\n")
-
-cat("\nNext Steps:\n")
-cat("1. Open SCINA_workflow.R\n")
-cat("2. Update line 134 to:\n")
-cat('   seurat_obj <- readRDS("data/GSE157827_processed/GSE157827_merged_seurat.rds")\n')
-cat("3. Run the full SCINA pipeline\n")
-cat("4. Compare results with Azimuth team\n\n")
-
-cat("Ready for SCINA analysis!\n\n")
-
-################################################################################
-# END OF SCRIPT
-################################################################################
+###############################################################################
+# End of script
+###############################################################################
